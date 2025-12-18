@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Módulo Reportes — C&Cdigital</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <!-- Tus estilos -->
+  <link rel="stylesheet" href="../public/css/estilos.css">
+  <!-- Script de verificación de sesión (DEBE IR PRIMERO) -->
+  <script src="../public/js/auth-check.js"></script>
+</head>
+<body>
+  <!-- Barra superior -->
+  <div class="topbar d-flex justify-content-between">
+    <div>
+      <a href="#">Soporte</a>
+      <a href="#">Contacto</a>
+    </div>
+    <div>
+      <a href="#" id="btnLogout">Cerrar Sesión</a>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm" style="top: 32px;">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-primary" href="#">C&Cdigital</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin.html">Panel</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="cuarto_frio.html">Cuartos</a></li>
+          <li class="nav-item"><a class="nav-link active" href="reporte.html">Reportes</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido -->
+  <main class="container-fluid my-5 pt-4">
+    <h1 class="h3 mb-4 text-primary">
+      <i class="bi bi-file-text me-2"></i>Reportes de Sensores
+    </h1>
+
+    <!-- Filtros -->
+    <div class="card mb-4 shadow-sm border-0">
+      <div class="card-body">
+        <form id="formFiltros" class="row g-3">
+          <div class="col-md-4">
+            <label for="filtro_sensor" class="form-label">Sensor</label>
+            <input type="text" class="form-control" id="filtro_sensor" placeholder="Código de sensor">
+          </div>
+          <div class="col-md-3">
+            <label for="filtro_desde" class="form-label">Desde</label>
+            <input type="date" class="form-control" id="filtro_desde">
+          </div>
+          <div class="col-md-3">
+            <label for="filtro_hasta" class="form-label">Hasta</label>
+            <input type="date" class="form-control" id="filtro_hasta">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">
+              <i class="bi bi-search"></i> Buscar
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnLimpiarFiltros">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tabla de Reportes -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="text-nowrap">Sensor</th>
+                <th class="text-nowrap">Fecha</th>
+                <th class="text-center">Temp</th>
+                <th class="text-center">Hum</th>
+                <th class="text-center">Volt</th>
+                <th class="text-center">Amp</th>
+                <th class="text-center">P.S</th>
+                <th class="text-center">P.E</th>
+              </tr>
+            </thead>
+            <tbody id="tablaReportes">
+              <tr>
+                <td colspan="8" class="text-center py-4">Cargando reportes...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- JS del módulo -->
+  <script src="../public/js/reporte.js"></script>
+</body>
+</html>

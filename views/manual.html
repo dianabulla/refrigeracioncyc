@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Módulo Manual — C&Cdigital</title>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="../public/css/estilos.css">
+  <!-- Script de verificación de sesión (DEBE IR PRIMERO) -->
+  <script src="../public/js/auth-check.js"></script>
+</head>
+<body>
+  <!-- Barra superior -->
+  <div class="topbar d-flex justify-content-between">
+    <div>
+      <a href="#">Soporte</a>
+      <a href="#">Contacto</a>
+    </div>
+    <div>
+      <a href="#" id="btnLogout">Cerrar Sesión</a>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm" style="top: 32px;">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-primary" href="#">C&Cdigital</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin.html">Panel</a></li>
+          <li class="nav-item"><a class="nav-link active" href="fincas.html">Fincas</a></li>
+          <li class="nav-item"><a class="nav-link" href="usuarios.html">Usuarios</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido -->
+  <main class="container my-5 pt-5">
+    <h1 class="h3 mb-4 text-primary"><i class="bi bi-journal-text me-2"></i>Manual del Sistema</h1>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-light fw-bold">
+        <i class="bi bi-book me-1"></i> Documentación
+      </div>
+      <div class="card-body">
+        <p>En esta sección encontrarás los manuales de usuario, documentación técnica y guías de referencia del sistema.</p>
+        
+        <!-- Links de manuales -->
+        <ul class="list-group mb-4">
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Manual de Usuario
+            <a href="../manuales/manual_usuario.pdf" class="btn btn-sm btn-primary" target="_blank">
+              <i class="bi bi-file-earmark-pdf me-1"></i> Ver PDF
+            </a>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Manual Técnico
+            <a href="../manuales/manual_tecnico.pdf" class="btn btn-sm btn-primary" target="_blank">
+              <i class="bi bi-file-earmark-pdf me-1"></i> Ver PDF
+            </a>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            Guía Rápida
+            <a href="../manuales/guia_rapida.pdf" class="btn btn-sm btn-primary" target="_blank">
+              <i class="bi bi-file-earmark-pdf me-1"></i> Ver PDF
+            </a>
+          </li>
+        </ul>
+
+        <!-- Visualizador embebido -->
+        <h5 class="mb-3">Vista previa del manual</h5>
+        <div class="ratio ratio-16x9 border">
+          <iframe src="../manuales/manual_usuario.pdf" title="Manual de Usuario" frameborder="0"></iframe>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

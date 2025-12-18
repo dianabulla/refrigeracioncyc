@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Módulo Empresas — C&Cdigital</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="../public/css/estilos.css">
+  <!-- Script de verificación de sesión (DEBE IR PRIMERO) -->
+  <script src="../public/js/auth-check.js"></script>
+</head>
+<body>
+  <!-- Barra superior -->
+  <div class="topbar d-flex justify-content-between">
+    <div>
+      <a href="#">Soporte</a>
+      <a href="#">Contacto</a>
+    </div>
+    <div>
+      <a href="#" id="btnLogout">Cerrar Sesión</a>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm" style="top: 32px;">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-primary" href="#">C&Cdigital</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin.html">Panel</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link active" href="empresa.html">Empresas</a></li>
+          <li class="nav-item"><a class="nav-link" href="finca.html">Fincas</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido -->
+  <main class="container my-5 pt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h3 mb-0 text-primary">
+        <i class="bi bi-building me-2"></i>Empresas
+      </h1>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEmpresa" id="btnNuevaEmpresa">
+        <i class="bi bi-plus-circle me-1"></i>Nueva Empresa
+      </button>
+    </div>
+
+    <!-- Tabla de empresas -->
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>NIT</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th style="width:130px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaEmpresas">
+              <!-- filas generadas por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal nueva/editar empresa -->
+  <div class="modal fade" id="modalEmpresa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="formEmpresa">
+          <div class="modal-header">
+            <h5 class="modal-title" id="tituloModalEmpresa">
+              <i class="bi bi-plus-circle me-2"></i>Registrar Empresa
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body row g-3">
+            <div class="col-12">
+              <label for="codigo" class="form-label">Código</label>
+              <input type="text" id="codigo" name="codigo" class="form-control" required>
+            </div>
+
+            <div class="col-12">
+              <label for="nombre" class="form-label">Nombre de la empresa</label>
+              <input type="text" id="nombre" name="nombre" class="form-control" required>
+            </div>
+
+            <div class="col-12">
+              <label for="direccion" class="form-label">Dirección</label>
+              <input type="text" id="direccion" name="direccion" class="form-control">
+            </div>
+
+            <div class="col-6">
+              <label for="telefono" class="form-label">Teléfono</label>
+              <input type="text" id="telefono" name="telefono" class="form-control">
+            </div>
+
+            <div class="col-6">
+              <label for="nit" class="form-label">NIT</label>
+              <input type="text" id="nit" name="nit" class="form-control">
+            </div>
+
+            <div class="col-12 form-check form-switch mt-2">
+              <input class="form-check-input" type="checkbox" id="activo" checked>
+              <label class="form-check-label" for="activo">Empresa activa</label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnGuardar"
+                    data-modo="crear">
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../public/js/empresa.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# Protección de archivos sensibles
+# Evita acceso directo a archivos de configuración y modelos
+
+<FilesMatch "\.(php|inc)$">
+    # Permitir acceso solo a archivos API y login
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Permitir acceso a archivos API
+<Files "*.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# Bloquear acceso directo a directorios sensibles
+Options -Indexes
+
+# Proteger archivos de configuración
+<FilesMatch "^(db|env|auth|validators)\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Habilitar rewrite para redirecciones
+RewriteEngine On
+
+# Prevenir acceso directo a carpeta models
+RewriteCond %{REQUEST_URI} ^/models/
+RewriteRule ^(.*)$ - [F,L]
+
+# Prevenir acceso directo a carpeta config (excepto desde servidor)
+RewriteCond %{REQUEST_URI} ^/config/
+RewriteRule ^(.*)$ - [F,L]
+
+# Prevenir acceso directo a carpeta controllers
+RewriteCond %{REQUEST_URI} ^/controllers/
+RewriteRule ^(.*)$ - [F,L]

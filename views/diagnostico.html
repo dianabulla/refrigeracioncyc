@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico del Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Diagnóstico del Sistema</h3>
+            </div>
+            <div class="card-body">
+                <div id="resultados">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Ejecutando diagnóstico...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const APIs = [
+            { nombre: 'Usuarios', url: '../api/usuario.php' },
+            { nombre: 'Fincas', url: '../api/finca.php' },
+            { nombre: 'Empresas', url: '../api/empresa.php' },
+            { nombre: 'Cuartos Fríos', url: '../api/cuarto_frio.php' },
+            { nombre: 'Sensores', url: '../api/sensor.php' },
+            { nombre: 'Componentes', url: '../api/componente.php' },
+            { nombre: 'Roles', url: '../api/rol.php' },
+            { nombre: 'Reportes', url: '../api/reporte.php' },
+            { nombre: 'Mantenimiento', url: '../api/mantenimiento.php' },
+            { nombre: 'Sesión', url: '../api/session.php', skipAuth: true }
+        ];
+
+        async function diagnosticar() {
+            const resultadosDiv = document.getElementById('resultados');
+            let html = '<div class="list-group">';
+
+            for (const api of APIs) {
+                try {
+                    const inicio = Date.now();
+                    const res = await fetch(api.url);
+                    const tiempo = Date.now() - inicio;
+                    const contentType = res.headers.get('content-type');
+                    
+                    let data;
+                    let isJson = false;
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        isJson = true;
+                        data = await res.json();
+                    } else {
+                        data = await res.text();
+                    }
+
+                    const status = res.ok ? 'success' : 'danger';
+                    const icon = res.ok ? 'check-circle-fill' : 'x-circle-fill';
+                    
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <h5 class="mb-1">
+                                    <i class="bi bi-${icon} text-${status} me-2"></i>${api.nombre}
+                                </h5>
+                                <small class="text-muted">${tiempo}ms</small>
+                            </div>
+                            <p class="mb-1">
+                                <span class="badge bg-${status}">${res.status} ${res.statusText}</span>
+                                <span class="badge bg-info">${isJson ? 'JSON' : 'HTML/TEXT'}</span>
+                            </p>
+                            <small class="text-muted">
+                                ${api.url}
+                            </small>
+                            ${!res.ok || !isJson ? `
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#collapse-${APIs.indexOf(api)}">
+                                        Ver detalles
+                                    </button>
+                                    <div class="collapse mt-2" id="collapse-${APIs.indexOf(api)}">
+                                        <pre class="bg-light p-2 border rounded small">${JSON.stringify(data, null, 2).substring(0, 500)}</pre>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                } catch (error) {
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <h5 class="mb-1">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>${api.nombre}
+                                </h5>
+                            </div>
+                            <p class="mb-1">
+                                <span class="badge bg-danger">ERROR</span>
+                            </p>
+                            <small class="text-danger">
+                                ${error.message}
+                            </small>
+                        </div>
+                    `;
+                }
+            }
+
+            html += '</div>';
+            
+            // Agregar resumen
+            const total = APIs.length;
+            const exitosos = document.querySelectorAll('.bi-check-circle-fill').length;
+            
+            html = `
+                <div class="alert alert-info mb-3">
+                    <h5><i class="bi bi-info-circle me-2"></i>Resumen</h5>
+                    <p class="mb-0">APIs probadas: ${total} | Exitosas: ${exitosos} | Con errores: ${total - exitosos}</p>
+                </div>
+            ` + html;
+            
+            resultadosDiv.innerHTML = html;
+        }
+
+        document.addEventListener('DOMContentLoaded', diagnosticar);
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

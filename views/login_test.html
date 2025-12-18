@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Login Test</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial; padding: 24px; }
+    button { padding: 10px 16px; }
+    pre { background: #f6f8fa; padding: 12px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Login de prueba</h1>
+
+  <form id="formLogin">
+    <label>Email<br><input id="email" type="email" value="admin@demo.com" required /></label><br><br>
+    <label>Contraseña<br><input id="password" type="password" value="123456" required /></label><br><br>
+    <button type="submit">Iniciar sesión</button>
+  </form>
+
+  <h3>Respuesta</h3>
+  <pre id="out">—</pre>
+
+  <script>
+    const OUT = (x) => document.getElementById('out').textContent =
+      typeof x === 'string' ? x : JSON.stringify(x, null, 2);
+
+    document.getElementById('formLogin').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      OUT('Enviando...');
+      try {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        const res = await fetch("../controllers/authcontroller.php?action=login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",           // ← MUY IMPORTANTE
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        OUT(data);
+
+        if (res.ok) {
+          // prueba rápida: pedir el perfil para confirmar la sesión
+          const p = await fetch("../controllers/authcontroller.php?action=perfil", {
+            credentials: "include"
+          });
+          const perfil = await p.json();
+          OUT({ login: data, perfil });
+          // aquí ya tienes la cookie de sesión, puedes navegar a tu página de usuarios
+          // location.href = "./usuarios.html";  // si quieres redirigir automáticamente
+        }
+      } catch (err) {
+        OUT(String(err));
+      }
+    });
+  </script>
+</body>
+</html>

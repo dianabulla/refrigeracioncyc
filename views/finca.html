@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Fincas</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Estilos unificados -->
+  <link href="../public/css/estilos.css" rel="stylesheet">
+  <!-- Script de verificación de sesión (DEBE IR PRIMERO) -->
+  <script src="../public/js/auth-check.js"></script>
+</head>
+<body>
+  <!-- Barra superior -->
+  <div class="topbar d-flex justify-content-between">
+    <div>
+      <a href="#">Soporte</a>
+      <a href="#">Contacto</a>
+    </div>
+    <div>
+      <a href="#" id="btnLogout">Cerrar Sesión</a>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm" style="top: 32px;">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-primary" href="#">C&Cdigital</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin.html">Panel</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link active" href="finca.html">Fincas</a></li>
+          <li class="nav-item"><a class="nav-link" href="cuarto_frio.html">Cuartos</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido principal -->
+  <main class="container mt-5 pt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h3 mb-0 text-primary">
+        <i class="bi bi-house-door me-2 text-primary"></i>Gestión de Fincas
+      </h1>
+      <button class="btn btn-primary" id="btnNuevaFinca" data-bs-toggle="modal" data-bs-target="#modalFinca">
+        <i class="bi bi-plus-circle me-1"></i>Nueva Finca
+      </button>
+    </div>
+
+    <!-- Tabla de fincas -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Empresa</th>
+                <th>Estado</th>
+                <th style="width:130px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaFincas">
+              <!-- filas generadas por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Nueva / Editar Finca -->
+  <div class="modal fade" id="modalFinca" tabindex="-1" aria-labelledby="modalFincaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="formFinca">
+          <div class="modal-header border-0">
+            <h5 class="modal-title text-primary" id="modalFincaLabel">
+              <i class="bi bi-plus-circle me-2"></i>Nueva Finca
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body row g-3">
+            <div class="col-md-6">
+              <label for="codigo" class="form-label">Código</label>
+              <input type="text" class="form-control" id="codigo" required>
+            </div>
+            <div class="col-md-6">
+              <label for="nombre" class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="nombre" required>
+            </div>
+
+            <div class="col-md-6">
+              <label for="telefono" class="form-label">Teléfono</label>
+              <input type="text" class="form-control" id="telefono">
+            </div>
+            <div class="col-md-6">
+              <label for="direccion" class="form-label">Dirección</label>
+              <input type="text" class="form-control" id="direccion">
+            </div>
+
+            <div class="col-md-6">
+              <label for="codigo_empresa" class="form-label">Empresa</label>
+              <!-- Se llena desde la API de empresas -->
+              <select id="codigo_empresa" class="form-select" required>
+                <option value="">Seleccione una empresa...</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 d-flex align-items-center">
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="activo" checked>
+                <label class="form-check-label" for="activo">Finca activa</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnGuardarFinca" data-modo="crear">
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../public/js/finca.js"></script>
+</body>
+</html>

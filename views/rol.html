@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Módulo Roles — C&Cdigital</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <!-- Estilos generales del sistema -->
+  <link rel="stylesheet" href="../public/css/estilos.css">
+  <!-- Script de verificación de sesión (DEBE IR PRIMERO) -->
+  <script src="../public/js/auth-check.js"></script>
+</head>
+<body>
+  <!-- Barra superior -->
+  <div class="topbar d-flex justify-content-between">
+    <div>
+      <a href="#">Soporte</a>
+      <a href="#">Contacto</a>
+    </div>
+    <div>
+      <a href="#" id="btnLogout">Cerrar Sesión</a>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm" style="top: 32px;">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-primary" href="#">C&Cdigital</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin.html">Panel</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link active" href="rol.html">Roles</a></li>
+          <li class="nav-item"><a class="nav-link" href="usuario.html">Usuarios</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido principal -->
+  <main class="container my-5 pt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h3 mb-0 text-primary">
+        <i class="bi bi-people-gear me-2"></i>Gestión de Roles
+      </h1>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalRol">
+        <i class="bi bi-plus-circle me-1"></i>Nuevo Rol
+      </button>
+    </div>
+
+    <!-- Tabla de roles -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th class="text-center">Opciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaRoles">
+              <!-- Filas dinámicas desde rol.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Rol -->
+  <div class="modal fade" id="modalRol" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="formRol" onsubmit="event.preventDefault();">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-people-gear me-2"></i>Rol
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body row g-3">
+            <div class="col-12">
+              <label class="form-label" for="codigo">Código</label>
+              <input type="text" class="form-control" id="codigo" required>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="nombre">Nombre</label>
+              <input type="text" class="form-control" id="nombre" required>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="descripcion">Descripción</label>
+              <textarea class="form-control" id="descripcion" rows="2" placeholder="Describe brevemente el rol"></textarea>
+            </div>
+
+            <!-- Sección de Permisos -->
+            <div class="col-12 mt-4">
+              <h6 class="mb-3"><i class="bi bi-shield-check me-2"></i>Permisos del Rol</h6>
+              <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
+                
+                <!-- Seleccionar todos -->
+                <div class="form-check mb-3 pb-3 border-bottom">
+                  <input class="form-check-input" type="checkbox" id="permiso_todos" onchange="toggleTodosPermisos(this)">
+                  <label class="form-check-label fw-bold" for="permiso_todos">
+                    <i class="bi bi-check-all me-1"></i>Seleccionar Todos
+                  </label>
+                </div>
+
+                <!-- Módulo: Usuarios -->
+                <div class="mb-3">
+                  <div class="fw-bold text-primary mb-2"><i class="bi bi-people me-1"></i>Usuarios</div>
+                  <div class="row ms-2">
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="ver_usuarios" value="ver_usuarios"><label class="form-check-label" for="ver_usuarios">Ver</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="crear_usuarios" value="crear_usuarios"><label class="form-check-label" for="crear_usuarios">Crear</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="editar_usuarios" value="editar_usuarios"><label class="form-check-label" for="editar_usuarios">Editar</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="eliminar_usuarios" value="eliminar_usuarios"><label class="form-check-label" for="eliminar_usuarios">Eliminar</label></div>
+                  </div>
+                </div>
+
+                <!-- Módulo: Fincas -->
+                <div class="mb-3">
+                  <div class="fw-bold text-primary mb-2"><i class="bi bi-house me-1"></i>Fincas</div>
+                  <div class="row ms-2">
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="ver_fincas" value="ver_fincas"><label class="form-check-label" for="ver_fincas">Ver</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="crear_fincas" value="crear_fincas"><label class="form-check-label" for="crear_fincas">Crear</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="editar_fincas" value="editar_fincas"><label class="form-check-label" for="editar_fincas">Editar</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="eliminar_fincas" value="eliminar_fincas"><label class="form-check-label" for="eliminar_fincas">Eliminar</label></div>
+                  </div>
+                </div>
+
+                <!-- Módulo: Cuartos Fríos -->
+                <div class="mb-3">
+                  <div class="fw-bold text-primary mb-2"><i class="bi bi-thermometer-snow me-1"></i>Cuartos Fríos</div>
+                  <div class="row ms-2">
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="ver_cuartos" value="ver_cuartos"><label class="form-check-label" for="ver_cuartos">Ver</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="crear_cuartos" value="crear_cuartos"><label class="form-check-label" for="crear_cuartos">Crear</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="editar_cuartos" value="editar_cuartos"><label class="form-check-label" for="editar_cuartos">Editar</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="eliminar_cuartos" value="eliminar_cuartos"><label class="form-check-label" for="eliminar_cuartos">Eliminar</label></div>
+                  </div>
+                </div>
+
+                <!-- Módulo: Sensores -->
+                <div class="mb-3">
+                  <div class="fw-bold text-primary mb-2"><i class="bi bi-cpu me-1"></i>Sensores</div>
+                  <div class="row ms-2">
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="ver_sensores" value="ver_sensores"><label class="form-check-label" for="ver_sensores">Ver</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="crear_sensores" value="crear_sensores"><label class="form-check-label" for="crear_sensores">Crear</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="editar_sensores" value="editar_sensores"><label class="form-check-label" for="editar_sensores">Editar</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="eliminar_sensores" value="eliminar_sensores"><label class="form-check-label" for="eliminar_sensores">Eliminar</label></div>
+                  </div>
+                </div>
+
+                <!-- Módulo: Componentes -->
+                <div class="mb-3">
+                  <div class="fw-bold text-primary mb-2"><i class="bi bi-gear me-1"></i>Componentes</div>
+                  <div class="row ms-2">
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="ver_componentes" value="ver_componentes"><label class="form-check-label" for="ver_componentes">Ver</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="crear_componentes" value="crear_componentes"><label class="form-check-label" for="crear_componentes">Crear</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="editar_componentes" value="editar_componentes"><label class="form-check-label" for="editar_componentes">Editar</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="eliminar_componentes" value="eliminar_componentes"><label class="form-check-label" for="eliminar_componentes">Eliminar</label></div>
+                  </div>
+                </div>
+
+                <!-- Módulo: Mantenimientos -->
+                <div class="mb-3">
+                  <div class="fw-bold text-primary mb-2"><i class="bi bi-tools me-1"></i>Mantenimientos</div>
+                  <div class="row ms-2">
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="ver_mantenimientos" value="ver_mantenimientos"><label class="form-check-label" for="ver_mantenimientos">Ver</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="crear_mantenimientos" value="crear_mantenimientos"><label class="form-check-label" for="crear_mantenimientos">Crear</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="editar_mantenimientos" value="editar_mantenimientos"><label class="form-check-label" for="editar_mantenimientos">Editar</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="eliminar_mantenimientos" value="eliminar_mantenimientos"><label class="form-check-label" for="eliminar_mantenimientos">Eliminar</label></div>
+                  </div>
+                </div>
+
+                <!-- Módulo: Reportes -->
+                <div class="mb-3">
+                  <div class="fw-bold text-primary mb-2"><i class="bi bi-file-earmark-bar-graph me-1"></i>Reportes</div>
+                  <div class="row ms-2">
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="ver_reportes" value="ver_reportes"><label class="form-check-label" for="ver_reportes">Ver</label></div>
+                    <div class="col-6 form-check"><input class="form-check-input permiso-check" type="checkbox" id="exportar_reportes" value="exportar_reportes"><label class="form-check-label" for="exportar_reportes">Exportar</label></div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="col-12 form-check mt-3">
+              <input class="form-check-input" type="checkbox" id="activo" checked>
+              <label class="form-check-label" for="activo">
+                Rol activo
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <!-- Por defecto crea; al editar, rol.js cambia este onclick a actualizarRol(...) -->
+            <button type="button" class="btn btn-primary" id="btnGuardar" onclick="crearRol()">
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../public/js/rol.js"></script>
+</body>
+</html>

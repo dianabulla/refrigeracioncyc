@@ -1,0 +1,8 @@
+# archivos locales y secretos
+.env
+
+# dependencias y archivos comunes
+/vendor/
+/node_modules/
+*.log
+.DS_Store
