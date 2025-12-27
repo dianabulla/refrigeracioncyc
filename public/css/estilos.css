@@ -18,6 +18,75 @@ body {
   padding-top: 110px; /* espacio para topbar + navbar */
 }
 
+/* =====================================================
+   KPI CARDS - INDICADORES CLAVE
+===================================================== */
+.kpi-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 20px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+}
+
+.kpi-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.kpi-card.kpi-success {
+  background: linear-gradient(135deg, #34a853 0%, #1e8449 100%);
+}
+
+.kpi-card.kpi-danger {
+  background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%);
+}
+
+.kpi-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.kpi-content {
+  flex: 1;
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.kpi-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* =====================================================
+   BÚSQUEDA Y CONTROLES
+===================================================== */
+#searchCuartos {
+  border: 2px solid #e0e0e0;
+  transition: border-color 0.3s ease;
+  font-size: 1rem;
+  padding: 12px 20px;
+}
+
+#searchCuartos:focus {
+  border-color: #2196F3;
+  box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+}
+
 /* ==========================
    Barra superior fija (Topbar)
 ========================== */

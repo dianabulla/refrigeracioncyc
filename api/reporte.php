@@ -34,6 +34,18 @@ try {
         $desde        = $_GET['desde'] ?? null; // sobre fecha_captura
         $hasta        = $_GET['hasta'] ?? null;
 
+        // Si no envían fechas, por defecto traer solo el día de hoy para evitar cargas pesadas
+        if (!$desde && !$hasta) {
+            $hoy = date('Y-m-d');
+            $desde = $hoy . ' 00:00:00';
+            $hasta = $hoy . ' 23:59:59';
+        }
+
+        // Límite de seguridad para evitar respuestas enormes
+        $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 500;
+        if ($limit <= 0) $limit = 500;
+        if ($limit > 2000) $limit = 2000;
+
         // Detalle por código
         if ($codigo) {
             $st = $pdo->prepare("SELECT * FROM reporte WHERE codigo = ?");
@@ -89,7 +101,7 @@ try {
             $params[] = $hasta;
         }
 
-        $sql .= " ORDER BY r.fecha_captura DESC, r.id DESC";
+        $sql .= " ORDER BY r.fecha_captura DESC, r.id DESC LIMIT {$limit}";
 
         $st = $pdo->prepare($sql);
         $st->execute($params);

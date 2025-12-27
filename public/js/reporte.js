@@ -600,16 +600,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // Cargar cuartos fríos
   cargarCuartosFrios();
 
-  // Configurar fechas por defecto (últimos 7 días)
+  // Configurar fechas por defecto (hoy) para filtrar de entrada y acelerar carga
   const hoy = new Date();
-  const hace7dias = new Date(hoy);
-  hace7dias.setDate(hace7dias.getDate() - 7);
-  
+  const hoyStr = hoy.toISOString().slice(0, 10); // YYYY-MM-DD
+
   const inputDesde = document.getElementById("graficosDesde");
   const inputHasta = document.getElementById("graficosHasta");
+  const filtroDesde = document.getElementById("filtro_desde");
+  const filtroHasta = document.getElementById("filtro_hasta");
   
-  if (inputDesde) inputDesde.valueAsDate = hace7dias;
-  if (inputHasta) inputHasta.valueAsDate = hoy;
+  if (inputDesde && !inputDesde.value) inputDesde.valueAsDate = hoy;
+  if (inputHasta && !inputHasta.value) inputHasta.valueAsDate = hoy;
+  if (filtroDesde && !filtroDesde.value) filtroDesde.value = hoyStr;
+  if (filtroHasta && !filtroHasta.value) filtroHasta.value = hoyStr;
 
   // Event listeners
   const selectCuarto = document.getElementById("selectCuartoFrio");

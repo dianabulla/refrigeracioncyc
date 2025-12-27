@@ -45,6 +45,84 @@
         <i class="bi bi-speedometer2 me-2"></i>Dashboard de Cuartos Fríos
       </h1>
 
+      <!-- ===== PANEL KPI ===== -->
+      <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+          <div class="kpi-card">
+            <div class="kpi-icon"><i class="bi bi-thermometer-half"></i></div>
+            <div class="kpi-content">
+              <div class="kpi-label">Temp. Promedio</div>
+              <div class="kpi-value" id="kpiTempPromedio">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+          <div class="kpi-card">
+            <div class="kpi-icon"><i class="bi bi-droplet"></i></div>
+            <div class="kpi-content">
+              <div class="kpi-label">Humedad Promedio</div>
+              <div class="kpi-value" id="kpiHumPromedio">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+          <div class="kpi-card kpi-success">
+            <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="kpi-content">
+              <div class="kpi-label">Cuartos Normales</div>
+              <div class="kpi-value" id="kpiCuartosNormales">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+          <div class="kpi-card kpi-danger">
+            <div class="kpi-icon"><i class="bi bi-exclamation-circle"></i></div>
+            <div class="kpi-content">
+              <div class="kpi-label">Cuartos en Alerta</div>
+              <div class="kpi-value" id="kpiCuartosAlerta">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== BÚSQUEDA Y CONFIGURACIÓN ===== -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <input type="text" id="searchCuartos" class="form-control form-control-lg" placeholder="🔍 Buscar cuartos por nombre...">
+        </div>
+        <div class="col-md-4 text-end">
+          <button class="btn btn-outline-primary me-2" id="btnConfigRangos" title="Establecer rangos de temperatura/humedad">
+            <i class="bi bi-gear me-1"></i>Configurar Rangos
+          </button>
+          <button class="btn btn-outline-info" id="btnComparisonMode2" title="Comparar múltiples sensores">
+            <i class="bi bi-stack me-1"></i>Modo Comparación
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== TABLA RESUMEN ===== -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Resumen Rápido</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 35%;">Cuarto</th>
+                <th style="width: 15%;">Temperatura</th>
+                <th style="width: 15%;">Humedad</th>
+                <th style="width: 15%;">Estado</th>
+                <th style="width: 20%;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaSumarioReportes">
+              <tr><td colspan="5" class="text-center py-4 text-muted">Cargando cuartos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Sección: Gráfico Tiempo vs Datos -->
       <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">

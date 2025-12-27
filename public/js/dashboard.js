@@ -18,9 +18,46 @@ const coloresGrafico = [
     'rgba(255, 193, 7, 1)',      // Dorado
 ];
 
+// Rangos por defecto (pueden ser personalizados)
+let rangosTemperatura = { min: -30, max: -5 };
+let rangosHumedad = { min: 30, max: 80 };
+
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatos();
+    inicializarBusqueda();
+    inicializarBotones();
 });
+
+function inicializarBotones() {
+    const btnComparison2 = document.getElementById('btnComparisonMode2');
+    if (btnComparison2) {
+        btnComparison2.addEventListener('click', () => {
+            comparisonMode = !comparisonMode;
+            btnComparison2.classList.toggle('active');
+            sensoresComparacion = [];
+        });
+    }
+
+    const btnConfigRangos = document.getElementById('btnConfigRangos');
+    if (btnConfigRangos) {
+        btnConfigRangos.addEventListener('click', mostrarDialogoConfiguracion);
+    }
+}
+
+function inicializarBusqueda() {
+    const searchInput = document.getElementById('searchCuartos');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const termino = e.target.value.toLowerCase();
+            cuartosFiltrados = datosCompletos.filter(cuarto =>
+                (cuarto.nombre || '').toLowerCase().includes(termino) ||
+                (cuarto.codigo || '').toLowerCase().includes(termino)
+            );
+            renderizarCuartos();
+            actualizarTablaSumario();
+        });
+    }
+}
 
 async function cargarDatos() {
     try {
@@ -35,6 +72,8 @@ async function cargarDatos() {
         
         console.log('Datos del dashboard:', datosCompletos);
         
+        actualizarKPIs();
+        actualizarTablaSumario();
         generarFiltros();
         inicializarUIChart();
         renderizarCuartos();
@@ -43,6 +82,169 @@ async function cargarDatos() {
         console.error("Error cargando datos:", error);
         mostrarError("Error al cargar información de cuartos fríos");
     }
+}
+
+// ====== KPI Y TABLA RESUMEN ======
+function actualizarKPIs() {
+    if (!datosCompletos || datosCompletos.length === 0) return;
+
+    let tempSum = 0, humSum = 0, tempCount = 0, humCount = 0;
+    let cuartosNormales = 0, cuartosAlerta = 0;
+
+    datosCompletos.forEach(cuarto => {
+        const sensores = Object.values(cuarto.sensores || {});
+        const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
+        const sensorHum = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
+
+        const tempVal = sensorTemp?.ultima?.valor;
+        const humVal = sensorHum?.ultima?.valor;
+
+        if (tempVal !== null && tempVal !== undefined) {
+            tempSum += parseFloat(tempVal);
+            tempCount++;
+        }
+        if (humVal !== null && humVal !== undefined) {
+            humSum += parseFloat(humVal);
+            humCount++;
+        }
+
+        const estado = determinarEstadoCuarto(cuarto);
+        if (estado === 'normal') cuartosNormales++;
+        else if (estado === 'alerta' || estado === 'critico') cuartosAlerta++;
+    });
+
+    const tempPromedio = tempCount > 0 ? (tempSum / tempCount).toFixed(1) : '—';
+    const humPromedio = humCount > 0 ? (humSum / humCount).toFixed(1) : '—';
+
+    document.getElementById('kpiTempPromedio').textContent = tempPromedio !== '—' ? `${tempPromedio}°C` : '—';
+    document.getElementById('kpiHumPromedio').textContent = humPromedio !== '—' ? `${humPromedio}%` : '—';
+    document.getElementById('kpiCuartosNormales').textContent = cuartosNormales;
+    document.getElementById('kpiCuartosAlerta').textContent = cuartosAlerta;
+}
+
+function determinarEstadoCuarto(cuarto) {
+    const sensores = Object.values(cuarto.sensores || {});
+    const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
+    const sensorHum = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
+
+    const tempVal = sensorTemp?.ultima?.valor;
+    const humVal = sensorHum?.ultima?.valor;
+
+    if (tempVal !== null && tempVal !== undefined) {
+        const temp = parseFloat(tempVal);
+        if (temp < rangosTemperatura.min - 2 || temp > rangosTemperatura.max + 2) return 'critico';
+        if (temp < rangosTemperatura.min || temp > rangosTemperatura.max) return 'alerta';
+    }
+
+    if (humVal !== null && humVal !== undefined) {
+        const hum = parseFloat(humVal);
+        if (hum < rangosHumedad.min - 5 || hum > rangosHumedad.max + 5) return 'critico';
+        if (hum < rangosHumedad.min || hum > rangosHumedad.max) return 'alerta';
+    }
+
+    return 'normal';
+}
+
+function actualizarTablaSumario() {
+    const tbody = document.getElementById('tablaSumarioReportes');
+    if (!tbody) return;
+
+    if (cuartosFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No hay cuartos</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = cuartosFiltrados.map(cuarto => {
+        const sensores = Object.values(cuarto.sensores || {});
+        const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
+        const sensorHum = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
+
+        const tempVal = sensorTemp?.ultima?.valor ?? null;
+        const humVal = sensorHum?.ultima?.valor ?? null;
+        const estado = determinarEstadoCuarto(cuarto);
+
+        const estadoHtml = {
+            'normal': '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Normal</span>',
+            'alerta': '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Alerta</span>',
+            'critico': '<span class="badge bg-danger"><i class="bi bi-exclamation-octagon me-1"></i>Crítico</span>'
+        }[estado] || '<span class="badge bg-secondary">—</span>';
+
+        return `
+            <tr class="cuarto-row" data-codigo="${cuarto.codigo}">
+                <td><strong>${cuarto.nombre}</strong><br><small class="text-muted">${cuarto.codigo}</small></td>
+                <td>${tempVal !== null ? `<strong>${parseFloat(tempVal).toFixed(1)}°C</strong>` : '—'}</td>
+                <td>${humVal !== null ? `<strong>${parseFloat(humVal).toFixed(1)}%</strong>` : '—'}</td>
+                <td>${estadoHtml}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="scrollToCuarto('${cuarto.codigo}')">
+                        <i class="bi bi-eye me-1"></i>Ver
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function scrollToCuarto(codigo) {
+    const elemento = document.querySelector(`[data-cuarto-codigo="${codigo}"]`);
+    if (elemento) {
+        elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function mostrarDialogoConfiguracion() {
+    const html = `
+        <div class="modal-header">
+            <h5 class="modal-title">Configurar Rangos</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Temperatura Mínima (°C)</label>
+                <input type="number" id="configTempMin" class="form-control" value="${rangosTemperatura.min}" step="0.5">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Temperatura Máxima (°C)</label>
+                <input type="number" id="configTempMax" class="form-control" value="${rangosTemperatura.max}" step="0.5">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Humedad Mínima (%)</label>
+                <input type="number" id="configHumMin" class="form-control" value="${rangosHumedad.min}" step="1" min="0" max="100">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Humedad Máxima (%)</label>
+                <input type="number" id="configHumMax" class="form-control" value="${rangosHumedad.max}" step="1" min="0" max="100">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" onclick="guardarConfiguracion()">Guardar</button>
+        </div>
+    `;
+
+    let modal = document.getElementById('configModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'configModal';
+        modal.className = 'modal fade';
+        modal.innerHTML = `<div class="modal-dialog"><div class="modal-content"></div></div>`;
+        document.body.appendChild(modal);
+    }
+
+    modal.querySelector('.modal-content').innerHTML = html;
+    new bootstrap.Modal(modal).show();
+}
+
+function guardarConfiguracion() {
+    rangosTemperatura.min = parseFloat(document.getElementById('configTempMin').value);
+    rangosTemperatura.max = parseFloat(document.getElementById('configTempMax').value);
+    rangosHumedad.min = parseFloat(document.getElementById('configHumMin').value);
+    rangosHumedad.max = parseFloat(document.getElementById('configHumMax').value);
+
+    bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
+    actualizarKPIs();
+    actualizarTablaSumario();
+    renderizarCuartos();
 }
 
 // ====== MODO COMPARACIÓN ======
@@ -666,6 +868,7 @@ function renderizarCuartos() {
     
     cuartosFiltrados.forEach(cuarto => {
         const tarjeta = crearTarjetaCuarto(cuarto);
+        tarjeta.setAttribute('data-cuarto-codigo', cuarto.codigo);
         contenedor.appendChild(tarjeta);
     });
 }
