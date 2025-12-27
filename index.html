@@ -15,26 +15,31 @@
 <body>
   <!-- Barra superior fija -->
   <div class="topbar d-flex justify-content-between align-items-center">
-    <div>
-      <span><i class="bi bi-telephone-fill"></i>+57 3123977099 | <i class="bi bi-telephone-fill"></i> +57 311 819 9181   |   <i class="bi bi-envelope "></i> refrigeracioncycltda@gmail.com   </span>
-    
+    <div class="d-none d-md-block">
+      <span><i class="bi bi-telephone-fill"></i> +57 3123977099 | <i class="bi bi-telephone-fill"></i> +57 311 819 9181 | <i class="bi bi-envelope"></i> refrigeracioncycltda@gmail.com</span>
+    </div>
+    <div class="d-md-none">
+      <span><i class="bi bi-telephone-fill"></i> +57 3123977099</span>
     </div>
     <div>
-      <a href="https://www.facebook.com/RefrigeracionCorreayCardenas"><i class="bi bi-facebook"></i></a>
-      <a href="https://www.instagram.com/refrigeracioncorreaycardenas/"><i class="bi bi-instagram"></i></a>
-      <a href="https://api.whatsapp.com/send/?phone=573123977099&text"><i class="bi bi-whatsapp"></i></a>
+      <a href="https://www.facebook.com/RefrigeracionCorreayCardenas" target="_blank" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+      <a href="https://www.instagram.com/refrigeracioncorreaycardenas/" target="_blank" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+      <a href="https://api.whatsapp.com/send/?phone=573123977099&text" target="_blank" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
     </div>
   </div>
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg fixed-top bg-white shadow-sm" style="top:30px;">
     <div class="container-fluid">
-      <a class="navbar-brand d-flex align-items-center text-primary fw-bold" href="../index.html">
+      <a class="navbar-brand d-flex align-items-center text-primary fw-bold" href="index.html">
         <img src="imagenes/logo.png" alt="Logo" width="55" class="me-2">
         C&Cdigital
       </a>
-    </div>
+      <!-- Botón hamburguesa para móviles -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
       </button>
+      <!-- Menú colapsable -->
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link text-primary" href="./views/login.html">Admin</a></li>

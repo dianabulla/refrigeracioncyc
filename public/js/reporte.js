@@ -466,23 +466,39 @@ function actualizarGraficoPresion(labels, presionS, presionE) {
  */
 function crearFilaReporte(item) {
   const tr = document.createElement("tr");
+  // Formato de valores para evitar desalineamiento
+  const temp = item.temperatura !== null && item.temperatura !== undefined ? parseFloat(item.temperatura).toFixed(1) + '°C' : '-';
+  const hum = item.humedad !== null && item.humedad !== undefined ? parseFloat(item.humedad).toFixed(1) + '%' : '-';
+  const volt = item.voltaje !== null && item.voltaje !== undefined ? parseFloat(item.voltaje).toFixed(1) + 'V' : '-';
+  const amp = item.amperaje !== null && item.amperaje !== undefined ? parseFloat(item.amperaje).toFixed(1) + 'A' : '-';
+  const pS = item.presion_s !== null && item.presion_s !== undefined ? parseFloat(item.presion_s).toFixed(1) : '-';
+  const pE = item.presion_e !== null && item.presion_e !== undefined ? parseFloat(item.presion_e).toFixed(1) : '-';
+  const aire = item.aire !== null && item.aire !== undefined ? parseFloat(item.aire).toFixed(1) : '-';
+  const otro = item.otro !== null && item.otro !== undefined ? parseFloat(item.otro).toFixed(1) : '-';
+  const puerta = item.puerta !== null && item.puerta !== undefined ? parseFloat(item.puerta).toFixed(1) : '-';
+  
   tr.innerHTML = `
-    <td>${item.id ?? "-"}</td>
-    <td>${item.codigo || "-"}</td>
-    <td>${item.nombre || "-"}</td>
-    <td>${item.tipo_reporte || "-"}</td>
-    <td>${item.codigo_sensor || "-"}</td>
-    <td>${item.fecha_captura || "-"}</td>
-    <td>${item.voltaje ?? "-"}</td>
-    <td>${item.amperaje ?? "-"}</td>
-    <td>${item.temperatura ?? "-"}</td>
-    <td>${item.humedad ?? "-"}</td>
-    <td>${item.presion_s ?? "-"}</td>
-    <td>${item.presion_e ?? "-"}</td>
-    <td>${item.puerta ?? "-"}</td>
-    <td>${item.aire ?? "-"}</td>
-    <td>${item.otro ?? "-"}</td>
-    <td>${item.activo === 1 ? "Activo" : "Inactivo"}</td>
+    <td>${item.id ?? '-'}</td>
+    <td>${item.codigo ?? '-'}</td>
+    <td>${item.nombre ?? '-'}</td>
+    <td>${item.tipo_reporte ?? '-'}</td>
+    <td>${item.report_id ?? '-'}</td>
+    <td>${item.codigo_sensor ?? '-'}</td>
+    <td>${item.codigo_cuarto ?? '-'}</td>
+    <td>${item.fecha_captura ?? '-'}</td>
+    <td>${item.fecha ?? '-'}</td>
+    <td class="text-center">${temp}</td>
+    <td class="text-center">${hum}</td>
+    <td class="text-center">${volt}</td>
+    <td class="text-center">${amp}</td>
+    <td class="text-center">${pS}</td>
+    <td class="text-center">${pE}</td>
+    <td class="text-center">${aire}</td>
+    <td class="text-center">${otro}</td>
+    <td class="text-center">${puerta}</td>
+    <td class="text-center"><span class="badge ${item.activo === 1 ? 'bg-success' : 'bg-secondary'}">${item.activo === 1 ? 'Activo' : 'Inactivo'}</span></td>
+    <td>${item.fecha_creacion ?? '-'}</td>
+    <td>${item.updated_at ?? '-'}</td>
   `;
   return tr;
 }
@@ -522,19 +538,26 @@ async function cargarReportes() {
     ? `${API_URL_REPORTE}?${params.toString()}`
     : API_URL_REPORTE;
 
+  const tbody = document.getElementById("tablaReportes");
+  
   try {
+    // Mostrar mensaje de carga
+    tbody.innerHTML = '<tr><td colspan="21" class="text-center py-4"><i class="bi bi-hourglass-split"></i> Cargando reportes...</td></tr>';
+    
     const res = await fetch(url);
     const data = await res.json();
 
-    if (!Array.isArray(data)) {
+    tbody.innerHTML = "";
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="21" class="text-center py-4 text-muted"><i class="bi bi-inbox"></i> No se encontraron reportes</td></tr>';
       return;
     }
 
-    const tbody = document.getElementById("tablaReportes");
-    tbody.innerHTML = "";
     data.forEach((item) => tbody.appendChild(crearFilaReporte(item)));
   } catch (e) {
-    // Error silencioso
+    tbody.innerHTML = '<tr><td colspan="21" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar reportes</td></tr>';
+    console.error('Error cargando reportes:', e);
   }
 }
 
@@ -629,4 +652,8 @@ document.addEventListener("DOMContentLoaded", () => {
       cargarReportes();
     });
   }
+
+  // Cargar reportes automáticamente al iniciar
+  cargarSensoresFiltro();
+  cargarReportes();
 });

@@ -32,9 +32,64 @@ try {
 
         if ($codigo) {
             $r = $model->obtenerPorCodigo($codigo);
+            
+            // AISLAMIENTO: Verificar acceso al sensor
+            if ($r && !isSuperusuario()) {
+                $sqlCheck = "SELECT f.codigo_empresa, c.codigo_finca 
+                             FROM sensor s
+                             INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+                             INNER JOIN finca f ON c.codigo_finca = f.codigo
+                             WHERE s.codigo = ?";
+                $stCheck = $pdo->prepare($sqlCheck);
+                $stCheck->execute([$codigo]);
+                $sensorFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+                
+                $fincaUsuario = getUserFinca();
+                $empresaUsuario = getUserEmpresa();
+                
+                if ($fincaUsuario && $sensorFinca['codigo_finca'] !== $fincaUsuario) {
+                    respond(['error'=>'Acceso denegado'], 403);
+                }
+                if (!$fincaUsuario && $empresaUsuario && $sensorFinca['codigo_empresa'] !== $empresaUsuario) {
+                    respond(['error'=>'Acceso denegado'], 403);
+                }
+            }
+            
             $r ? respond($r) : respond(['error'=>'No encontrado'], 404);
         }
 
+        // Listar sensores con filtro por finca/empresa
+        if (!isSuperusuario()) {
+            $fincaUsuario = getUserFinca();
+            $empresaUsuario = getUserEmpresa();
+            
+            $sql = "SELECT s.* FROM sensor s
+                    INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+                    INNER JOIN finca f ON c.codigo_finca = f.codigo
+                    WHERE 1=1";
+            $params = [];
+            
+            if ($fincaUsuario) {
+                $sql .= " AND f.codigo = ?";
+                $params[] = $fincaUsuario;
+            } elseif ($empresaUsuario) {
+                $sql .= " AND f.codigo_empresa = ?";
+                $params[] = $empresaUsuario;
+            } else {
+                respond(['error'=>'Sin permisos'], 403);
+            }
+            
+            if ($cuarto) {
+                $sql .= " AND s.codigo_cuarto = ?";
+                $params[] = $cuarto;
+            }
+            
+            $sql .= " ORDER BY s.fecha_creacion DESC";
+            $st = $pdo->prepare($sql);
+            $st->execute($params);
+            respond($st->fetchAll(PDO::FETCH_ASSOC));
+        }
+        
         respond($model->listar($cuarto));
     }
 
@@ -45,6 +100,31 @@ try {
 
         $data = json_decode(file_get_contents('php://input'), true);
         if (!is_array($data)) $data = $_POST;
+        
+        // AISLAMIENTO: Validar que el cuarto pertenece a la finca del usuario
+        if (!isSuperusuario() && !empty($data['codigo_cuarto'])) {
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa 
+                         FROM cuarto_frio c
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE c.codigo = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$data['codigo_cuarto']]);
+            $cuartoFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$cuartoFinca) {
+                respond(['error'=>'Cuarto no encontrado'], 404);
+            }
+            
+            $fincaUsuario = getUserFinca();
+            $empresaUsuario = getUserEmpresa();
+            
+            if ($fincaUsuario && $cuartoFinca['codigo_finca'] !== $fincaUsuario) {
+                respond(['error'=>'No puede crear sensores en cuartos de otra finca'], 403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $cuartoFinca['codigo_empresa'] !== $empresaUsuario) {
+                respond(['error'=>'No puede crear sensores en cuartos de otra empresa'], 403);
+            }
+        }
 
         $ok = $model->crear($data);
         $ok ? respond(['ok'=>true]) : respond(['error'=>'No se pudo crear (verifique campos requeridos o el código ya existe)'], 400);

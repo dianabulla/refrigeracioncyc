@@ -33,11 +33,61 @@ try {
 
         if ($codigo) {
             $row = $model->obtener($codigo);
+            
+            // AISLAMIENTO: Verificar acceso
+            if ($row && !isSuperusuario()) {
+                $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa 
+                             FROM mantenimiento m
+                             INNER JOIN cuarto_frio c ON m.codigo_cuarto = c.codigo
+                             INNER JOIN finca f ON c.codigo_finca = f.codigo
+                             WHERE m.codigo = ?";
+                $stCheck = $pdo->prepare($sqlCheck);
+                $stCheck->execute([$codigo]);
+                $mantFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+                
+                $fincaUsuario = getUserFinca();
+                $empresaUsuario = getUserEmpresa();
+                
+                if ($fincaUsuario && $mantFinca['codigo_finca'] !== $fincaUsuario) {
+                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                }
+                if (!$fincaUsuario && $empresaUsuario && $mantFinca['codigo_empresa'] !== $empresaUsuario) {
+                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                }
+            }
+            
             return $row 
                 ? respond($row)
                 : respond(['ok' => false, 'error' => 'Mantenimiento no encontrado'], 404);
         }
 
+        // Listar con filtro de finca/empresa
+        if (!isSuperusuario()) {
+            $fincaUsuario = getUserFinca();
+            $empresaUsuario = getUserEmpresa();
+            
+            $sql = "SELECT m.* FROM mantenimiento m
+                    INNER JOIN cuarto_frio c ON m.codigo_cuarto = c.codigo
+                    INNER JOIN finca f ON c.codigo_finca = f.codigo
+                    WHERE 1=1";
+            $params = [];
+            
+            if ($fincaUsuario) {
+                $sql .= " AND f.codigo = ?";
+                $params[] = $fincaUsuario;
+            } elseif ($empresaUsuario) {
+                $sql .= " AND f.codigo_empresa = ?";
+                $params[] = $empresaUsuario;
+            } else {
+                respond(['ok'=>false,'error'=>'Sin permisos'],403);
+            }
+            
+            $sql .= " ORDER BY m.fecha_inicio DESC";
+            $st = $pdo->prepare($sql);
+            $st->execute($params);
+            return respond($st->fetchAll(PDO::FETCH_ASSOC));
+        }
+        
         return respond($model->listar());
     }
 
@@ -52,6 +102,31 @@ try {
 
         if (empty($data['codigo']) || empty($data['nombre'])) {
             respond(['ok' => false, 'error' => 'Código y nombre son obligatorios'], 422);
+        }
+        
+        // AISLAMIENTO: Validar cuarto
+        if (!isSuperusuario() && !empty($data['codigo_cuarto'])) {
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa 
+                         FROM cuarto_frio c
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE c.codigo = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$data['codigo_cuarto']]);
+            $cuartoFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$cuartoFinca) {
+                respond(['ok'=>false,'error'=>'Cuarto no encontrado'],404);
+            }
+            
+            $fincaUsuario = getUserFinca();
+            $empresaUsuario = getUserEmpresa();
+            
+            if ($fincaUsuario && $cuartoFinca['codigo_finca'] !== $fincaUsuario) {
+                respond(['ok'=>false,'error'=>'No puede crear mantenimientos en otra finca'],403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $cuartoFinca['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok'=>false,'error'=>'No puede crear mantenimientos en otra empresa'],403);
+            }
         }
 
         $ok = $model->crear([

@@ -62,6 +62,38 @@ try {
         if (!is_array($data) || empty($data)) {
             $data = $_POST;
         }
+        
+        // AISLAMIENTO: Validar que la finca pertenece al usuario
+        if (!isSuperusuario() && !empty($data['codigo_finca'])) {
+            $sqlCheck = "SELECT f.codigo_empresa 
+                         FROM finca f
+                         WHERE f.codigo = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$data['codigo_finca']]);
+            $finca = $stCheck->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$finca) {
+                respond(['error' => 'Finca no encontrada'], 404);
+            }
+            
+            $fincaUsuario = getUserFinca();
+            $empresaUsuario = getUserEmpresa();
+            
+            if ($fincaUsuario && $data['codigo_finca'] !== $fincaUsuario) {
+                respond(['error' => 'No puede crear cuartos en otra finca'], 403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $finca['codigo_empresa'] !== $empresaUsuario) {
+                respond(['error' => 'No puede crear cuartos en finca de otra empresa'], 403);
+            }
+        } elseif (!isSuperusuario()) {
+            // Si no especificó finca, asignar la del usuario
+            $fincaUsuario = getUserFinca();
+            if ($fincaUsuario) {
+                $data['codigo_finca'] = $fincaUsuario;
+            } else {
+                respond(['error' => 'Debe especificar codigo_finca'], 422);
+            }
+        }
 
         $ok = $cuartoModel->crear($data);
         $ok ? respond(['ok' => true]) :

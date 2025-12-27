@@ -258,3 +258,84 @@ function requirePermiso(string $permiso): void {
         exit;
     }
 }
+/**
+ * Verifica que el usuario tenga acceso a una empresa específica
+ * Los superusuarios siempre tienen acceso
+ * 
+ * @param string $codigoEmpresa Código de empresa a verificar
+ * @return bool True si tiene acceso, false si no
+ */
+function tieneAccesoEmpresa(string $codigoEmpresa): bool {
+    $user = getAuthenticatedUser();
+    if (!$user) return false;
+    
+    // Superusuarios siempre tienen acceso
+    if (($user['tipo'] ?? null) === 'superusuario') {
+        return true;
+    }
+    
+    // Usuarios normales solo ven su empresa
+    return ($user['codigo_empresa'] ?? null) === $codigoEmpresa;
+}
+
+/**
+ * Verifica que el usuario tenga acceso a una finca específica
+ * Los superusuarios siempre tienen acceso
+ * 
+ * @param string $codigoFinca Código de finca a verificar
+ * @return bool True si tiene acceso, false si no
+ */
+function tieneAccesoFinca(string $codigoFinca): bool {
+    $user = getAuthenticatedUser();
+    if (!$user) return false;
+    
+    // Superusuarios siempre tienen acceso
+    if (($user['tipo'] ?? null) === 'superusuario') {
+        return true;
+    }
+    
+    // Si el usuario tiene asignada una finca específica, solo ve esa
+    $fincaUsuario = $user['codigo_finca'] ?? null;
+    if ($fincaUsuario) {
+        return $fincaUsuario === $codigoFinca;
+    }
+    
+    // Si no tiene finca asignada, tiene acceso a todas sus fincas (de su empresa)
+    return true;
+}
+
+/**
+ * Requiere acceso a una empresa específica
+ * Si no tiene acceso, devuelve error 403
+ * 
+ * @param string $codigoEmpresa Código de empresa requerida
+ */
+function requireAccesoEmpresa(string $codigoEmpresa): void {
+    if (!tieneAccesoEmpresa($codigoEmpresa)) {
+        http_response_code(403);
+        echo json_encode([
+            'ok' => false,
+            'error' => 'Acceso denegado a esta empresa',
+            'empresa_solicitada' => $codigoEmpresa
+        ]);
+        exit;
+    }
+}
+
+/**
+ * Requiere acceso a una finca específica
+ * Si no tiene acceso, devuelve error 403
+ * 
+ * @param string $codigoFinca Código de finca requerida
+ */
+function requireAccesoFinca(string $codigoFinca): void {
+    if (!tieneAccesoFinca($codigoFinca)) {
+        http_response_code(403);
+        echo json_encode([
+            'ok' => false,
+            'error' => 'Acceso denegado a esta finca',
+            'finca_solicitada' => $codigoFinca
+        ]);
+        exit;
+    }
+}

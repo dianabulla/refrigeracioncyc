@@ -35,62 +35,118 @@ class Rol {
 
     public function crear(array $d): bool {
         try {
+            // Validar campos requeridos
+            if (empty($d['codigo']) || empty($d['nombre'])) {
+                error_log("Rol crear: Faltan campos requeridos (codigo o nombre)");
+                return false;
+            }
+
             // Verificar código duplicado
             $existe = $this->pdo->prepare("SELECT codigo FROM rol WHERE codigo = ?");
             $existe->execute([$d['codigo']]);
             if ($existe->fetch()) {
-                return false; // Código ya existe
+                error_log("Rol crear: El código {$d['codigo']} ya existe");
+                return false;
             }
 
-            $st = $this->pdo->prepare(
-                "INSERT INTO rol (codigo, nombre, descripcion, codigo_empresa, permisos, activo, fecha_creacion)
-                 VALUES (:codigo, :nombre, :descripcion, :codigo_empresa, :permisos, :activo, NOW())"
-            );
+            // Verificar qué columnas existen en la tabla
+            $columns = $this->pdo->query("DESCRIBE rol")->fetchAll(PDO::FETCH_COLUMN);
             
-            // Convertir permisos a JSON si es array
-            $permisos = $d['permisos'] ?? null;
-            if (is_array($permisos)) {
-                $permisos = json_encode($permisos);
+            $campos = ['codigo', 'nombre', 'descripcion', 'activo'];
+            $valores = [':codigo', ':nombre', ':descripcion', ':activo'];
+            $params = [
+                ':codigo' => trim($d['codigo']),
+                ':nombre' => trim($d['nombre']),
+                ':descripcion' => $d['descripcion'] ?? null,
+                ':activo' => $d['activo'] ?? 1
+            ];
+            
+            // Agregar campos opcionales solo si existen en la tabla
+            if (in_array('codigo_empresa', $columns)) {
+                $campos[] = 'codigo_empresa';
+                $valores[] = ':codigo_empresa';
+                $params[':codigo_empresa'] = $d['codigo_empresa'] ?? null;
             }
             
-            return $st->execute([
-                ':codigo' => $d['codigo'],
-                ':nombre' => $d['nombre'],
-                ':descripcion' => $d['descripcion'] ?? null,
-                ':codigo_empresa' => $d['codigo_empresa'] ?? null,
-                ':permisos' => $permisos,
-                ':activo' => $d['activo'] ?? 1
-            ]);
+            if (in_array('permisos', $columns)) {
+                $campos[] = 'permisos';
+                $valores[] = ':permisos';
+                $permisos = $d['permisos'] ?? null;
+                if (is_array($permisos)) {
+                    $permisos = json_encode($permisos);
+                }
+                $params[':permisos'] = $permisos;
+            }
+            
+            $camposStr = implode(', ', $campos);
+            $valoresStr = implode(', ', $valores);
+            
+            $sql = "INSERT INTO rol ($camposStr, fecha_creacion) VALUES ($valoresStr, NOW())";
+            
+            $st = $this->pdo->prepare($sql);
+            $result = $st->execute($params);
+            
+            if (!$result) {
+                $errorInfo = $st->errorInfo();
+                error_log("Rol crear - Error SQL: " . json_encode($errorInfo));
+            }
+            
+            return $result;
         } catch (Throwable $e) {
-            error_log("Rol crear: " . $e->getMessage());
+            error_log("Rol crear - Exception: " . $e->getMessage());
+            error_log("Datos recibidos: " . json_encode($d));
             return false;
         }
     }
 
     public function actualizar(string $codigo, array $d): bool {
         try {
-            // Convertir permisos a JSON si es array
-            $permisos = isset($d['permisos']) ? 
-                (is_array($d['permisos']) ? json_encode($d['permisos']) : $d['permisos']) : null;
+            // Verificar qué columnas existen en la tabla
+            $columns = $this->pdo->query("DESCRIBE rol")->fetchAll(PDO::FETCH_COLUMN);
             
-            $st = $this->pdo->prepare(
-                "UPDATE rol SET 
-                    nombre = :nombre,
-                    descripcion = :descripcion,
-                    codigo_empresa = :codigo_empresa,
-                    permisos = :permisos,
-                    activo = :activo,
-                    updated_at = NOW()
-                 WHERE codigo = :codigo"
-            );
-            return $st->execute([
-                ':nombre' => $d['nombre'],
-                ':descripcion' => $d['descripcion'] ?? null,
-                ':codigo_empresa' => $d['codigo_empresa'] ?? null,
-                ':permisos' => $permisos,
-                ':activo' => $d['activo'] ?? 1,
-                ':codigo' => $codigo
-            ]);
+            $campos = [];
+            $params = [':codigo' => $codigo];
+            
+            // Campos básicos
+            if (isset($d['nombre'])) {
+                $campos[] = "nombre = :nombre";
+                $params[':nombre'] = $d['nombre'];
+            }
+            if (isset($d['descripcion'])) {
+                $campos[] = "descripcion = :descripcion";
+                $params[':descripcion'] = $d['descripcion'];
+            }
+            if (isset($d['activo'])) {
+                $campos[] = "activo = :activo";
+                $params[':activo'] = $d['activo'];
+            }
+            
+            // Campos opcionales solo si existen en la tabla
+            if (in_array('codigo_empresa', $columns) && isset($d['codigo_empresa'])) {
+                $campos[] = "codigo_empresa = :codigo_empresa";
+                $params[':codigo_empresa'] = $d['codigo_empresa'];
+            }
+            
+            if (in_array('permisos', $columns) && isset($d['permisos'])) {
+                $permisos = is_array($d['permisos']) ? json_encode($d['permisos']) : $d['permisos'];
+                $campos[] = "permisos = :permisos";
+                $params[':permisos'] = $permisos;
+            }
+            
+            if (empty($campos)) {
+                return false;
+            }
+            
+            // Agregar updated_at si existe
+            if (in_array('updated_at', $columns)) {
+                $campos[] = "updated_at = NOW()";
+            }
+            
+            $camposStr = implode(', ', $campos);
+            $sql = "UPDATE rol SET $camposStr WHERE codigo = :codigo";
+            
+            $st = $this->pdo->prepare($sql);
+            return $st->execute($params);
         } catch (Throwable $e) {
             error_log("Rol actualizar: " . $e->getMessage());
             return false;

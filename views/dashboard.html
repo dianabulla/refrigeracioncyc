@@ -7,7 +7,7 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="../public/css/estilos.css?v=20251218">
+  <link rel="stylesheet" href="../public/css/estilos.css?v=20251227v2">
   <script src="../public/js/auth-check.js"></script>
 </head>
 <body>
@@ -45,6 +45,103 @@
         <i class="bi bi-speedometer2 me-2"></i>Dashboard de Cuartos Fríos
       </h1>
 
+      <!-- Sección: Gráfico Tiempo vs Datos -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <h2 class="h5 m-0"><i class="bi bi-graph-up me-2"></i>Análisis de Datos vs Tiempo</h2>
+            <div>
+              <button class="btn btn-outline-info btn-sm comparison-mode-btn" id="btnComparisonMode" title="Comparar múltiples sensores">
+                <i class="bi bi-stack me-1"></i>Modo Comparación
+                <span class="comparison-badge" style="display:none;">0</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Controles de filtrado mejorados -->
+          <div class="chart-controls">
+            <div style="flex: 1; min-width: 200px;">
+              <label class="form-label small">Cuarto Frío</label>
+              <select id="selCuartoFiltro" class="form-select form-select-sm"></select>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <label class="form-label small">Tipo Sensor</label>
+              <select id="selTipoFiltro" class="form-select form-select-sm"></select>
+            </div>
+            <div style="flex: 1; min-width: 220px;">
+              <label class="form-label small">Sensor</label>
+              <select id="selSensor" class="form-select form-select-sm"></select>
+            </div>
+            <div style="flex: 1; min-width: 160px;">
+              <label class="form-label small">Métrica</label>
+              <select id="selMetrica" class="form-select form-select-sm">
+                <option value="temperatura">Temperatura (°C)</option>
+                <option value="humedad">Humedad (%)</option>
+                <option value="voltaje">Voltaje (V)</option>
+                <option value="amperaje">Amperaje (A)</option>
+                <option value="presion_s">Presión Succión (PSI)</option>
+                <option value="presion_e">Presión Entrada (PSI)</option>
+                <option value="aire">Aire</option>
+                <option value="puerta">Puerta</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Rango de fechas -->
+          <div class="chart-controls">
+            <div style="flex: 1; min-width: 160px;">
+              <label class="form-label small">Desde</label>
+              <input type="datetime-local" id="inpDesde" class="form-control form-control-sm" />
+            </div>
+            <div style="flex: 1; min-width: 160px;">
+              <label class="form-label small">Hasta</label>
+              <input type="datetime-local" id="inpHasta" class="form-control form-control-sm" />
+            </div>
+            <div class="d-flex gap-2" style="align-items: flex-end;">
+              <button class="btn btn-primary btn-sm" id="btnActualizarGrafico">
+                <i class="bi bi-arrow-repeat me-1"></i>Actualizar
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" id="btnExportData">
+                <i class="bi bi-download me-1"></i>Descargar
+              </button>
+            </div>
+          </div>
+
+          <!-- Rangos rápidos -->
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class="text-muted small" style="align-self: center;">Rangos rápidos:</span>
+            <button class="btn btn-outline-secondary btn-sm" id="btnRange1h">1h</button>
+            <button class="btn btn-outline-secondary btn-sm" id="btnRange2h">2h</button>
+            <button class="btn btn-outline-secondary btn-sm" id="btnRange6h">6h</button>
+            <button class="btn btn-outline-secondary btn-sm" id="btnRange24h">24h</button>
+            <button class="btn btn-outline-secondary btn-sm" id="btnRange7d">7 días</button>
+            <button class="btn btn-outline-secondary btn-sm" id="btnRange30d">30 días</button>
+          </div>
+
+          <!-- Lista de comparación (cuando está activo) -->
+          <div class="comparison-list" id="comparisonList">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong>Sensores en comparación:</strong>
+              <button class="btn btn-sm btn-outline-danger" id="btnClearComparison">Limpiar</button>
+            </div>
+            <div id="comparisonItems"></div>
+          </div>
+
+          <!-- Gráfico -->
+          <div class="chart-container">
+            <canvas id="chartTimeSeries"></canvas>
+          </div>
+
+          <!-- Estadísticas -->
+          <div class="stats-row" id="statsContainer"></div>
+
+          <!-- Leyenda y mensaje -->
+          <div id="chartLegend" class="chart-legend"></div>
+          <div id="chartMensaje" class="text-muted small mt-2"></div>
+        </div>
+      </div>
+
       <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
           <label class="form-label fw-bold">
@@ -70,6 +167,7 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="../public/js/dashboard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="../public/js/dashboard.js?v=20251227v2"></script>
 </body>
 </html>

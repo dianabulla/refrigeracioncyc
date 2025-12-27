@@ -627,3 +627,726 @@ table tbody td {
   color: #0c5460;
   border-left: 4px solid #17a2b8;
 }
+/* ==========================
+   Media Queries - Responsive
+========================== */
+
+/* Tablets y dispositivos medianos */
+@media (max-width: 991px) {
+  /* Navbar colapsado */
+  .navbar-collapse {
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .navbar-nav {
+    text-align: center;
+  }
+  
+  .navbar-nav .nav-item {
+    margin: 0.5rem 0;
+  }
+}
+
+/* Móviles y pantallas pequeñas */
+@media (max-width: 768px) {
+  /* Ajustar padding del body */
+  body {
+    padding-top: 100px;
+  }
+  
+  /* Topbar responsive */
+  .topbar {
+    font-size: 11px;
+    padding: 4px 8px;
+    flex-wrap: wrap;
+  }
+  
+  .topbar span {
+    font-size: 10px;
+    display: block;
+    margin-bottom: 4px;
+  }
+  
+  .topbar a {
+    margin-right: 8px;
+    font-size: 16px;
+  }
+  
+  /* Navbar ajustado */
+  .navbar {
+    padding: 0.5rem 1rem;
+  }
+  
+  .navbar-brand {
+    font-size: 1.1rem;
+  }
+  
+  .navbar-brand img {
+    width: 40px !important;
+  }
+  
+  /* Carousel más pequeño */
+  .carousel-caption h5 {
+    font-size: 1rem;
+  }
+  
+  .carousel-caption p {
+    font-size: 0.85rem;
+    display: none;
+  }
+  
+  /* Tablas responsive */
+  .table-responsive {
+    font-size: 0.85rem;
+  }
+  
+  table thead th {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.25rem;
+  }
+  
+  table tbody td {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.25rem;
+  }
+  
+  /* Botones más pequeños */
+  .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  /* Cards ajustados */
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Footer */
+  footer {
+    font-size: 0.85rem;
+    padding: 1.5rem 0;
+  }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 576px) {
+  body {
+    padding-top: 90px;
+  }
+  
+  .topbar span {
+    font-size: 9px;
+  }
+  
+  .navbar-brand {
+    font-size: 1rem;
+  }
+  
+  .navbar-brand img {
+    width: 35px !important;
+  }
+  
+  h1, .h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2, .h2 {
+    font-size: 1.3rem;
+  }
+  
+  h3, .h3 {
+    font-size: 1.1rem;
+  }
+  
+  /* Formularios en columnas */
+  .row .col-md-3,
+  .row .col-md-4,
+  .row .col-md-6 {
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* =====================================================
+   DASHBOARD - ESTILOS MEJORADOS PARA GRÁFICOS
+===================================================== */
+
+/* Contenedor del gráfico con altura definida */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  margin-bottom: 20px;
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Controles del gráfico */
+.chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 15px;
+  align-items: flex-end;
+  padding: 10px 0;
+}
+
+.chart-controls > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.chart-controls label {
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.chart-controls .form-select,
+.chart-controls .form-control {
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.chart-controls .form-select:focus,
+.chart-controls .form-control:focus {
+  border-color: #0056b3;
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+  outline: none;
+}
+
+/* Leyenda mejorada */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 12px 15px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  border-left: 4px solid #0056b3;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.chart-legend-color {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* Cajas de estadísticas */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.stat-box {
+  padding: 20px;
+  border-radius: 8px;
+  color: white;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.stat-box.temp {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-box.humidity {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-box.voltage {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+  line-height: 1;
+}
+
+.stat-subtext {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Botones de rango rápido */
+.btn-outline-secondary.active,
+.btn-outline-secondary:active {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+/* Modo comparación */
+.comparison-mode-btn {
+  position: relative;
+}
+
+.comparison-mode-btn.active {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: white !important;
+}
+
+.comparison-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #dc3545;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Lista de comparación */
+.comparison-list {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+  display: none;
+  border-left: 4px solid #28a745;
+}
+
+.comparison-list.active {
+  display: block;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.comparison-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  border-left: 3px solid #28a745;
+}
+
+.comparison-item:last-child {
+  margin-bottom: 0;
+}
+
+.comparison-item button {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+/* Mensaje de estado */
+#chartMensaje {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+}
+
+/* Selectores mejorados */
+.form-select-sm,
+.form-control-sm {
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  font-size: 0.9rem;
+}
+
+/* Card del dashboard */
+.card {
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* Responsive para gráficos */
+@media (max-width: 1200px) {
+  .chart-container {
+    height: 350px;
+  }
+  
+  .stats-row {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    height: 300px;
+  }
+  
+  .chart-controls {
+    flex-direction: column;
+  }
+  
+  .chart-controls > div {
+    width: 100%;
+  }
+  
+  .chart-controls .form-select,
+  .chart-controls .form-control,
+  .chart-controls button {
+    width: 100%;
+  }
+  
+  .stats-row {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  
+  .stat-box {
+    padding: 15px 10px;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .chart-legend {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .chart-container {
+    height: 250px;
+    padding: 10px;
+  }
+  
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =====================================================
+   ESTILOS PARA TARJETAS DE CUARTOS Y SENSORES
+===================================================== */
+
+.cuarto-card {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+  border: none !important;
+  transition: all 0.3s ease;
+}
+
+.cuarto-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(33, 150, 243, 0.4) !important;
+}
+
+.cuarto-header {
+  background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  margin: 0;
+}
+
+.cuarto-header h5 {
+  margin: 0 0 6px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.cuarto-header small {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  display: block;
+}
+
+.cuarto-body {
+  padding: 20px;
+  color: white;
+}
+
+/* Indicadores de temperatura y humedad */
+.indicator-block {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.indicator-item {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 18px 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 1);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.indicator-label {
+  font-size: 0.75rem;
+  color: #1976D2;
+  margin-bottom: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.indicator-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 8px;
+  line-height: 1.2;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.indicator-promedio {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Termómetro visual */
+.thermometer-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 30px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.thermometer-bar {
+  background: linear-gradient(90deg, #64B5F6 0%, #42A5F5 100%);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: bold;
+  transition: width 0.3s ease;
+  min-width: 50px;
+}
+
+.thermometer-temp {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Toggle sensores button */
+.toggle-sensors {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 1);
+  color: #1976D2;
+  padding: 12px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-sensors:hover {
+  background: #ffffff;
+  color: #1565C0;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.toggle-sensors.collapsed i {
+  transform: rotate(0deg);
+  transition: transform 0.3s ease;
+}
+
+.toggle-sensors:not(.collapsed) i {
+  transform: rotate(90deg);
+}
+
+/* Lista de sensores */
+.sensores-list {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+  margin-top: 12px;
+  padding-top: 0;
+}
+
+.sensores-list.show {
+  max-height: 2000px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Items de sensores */
+.sensor-item {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sensor-item:last-child {
+  border-bottom: none;
+}
+
+.sensor-nombre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #1565C0;
+}
+
+.sensor-checkbox {
+  margin-right: 4px;
+  cursor: pointer;
+}
+
+.sensor-datos {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.sensor-dato {
+  flex: 0 1 100%;
+  min-width: 100%;
+}
+
+.sensor-dato-label {
+  font-size: 0.8rem;
+  color: #0D47A1;
+  margin-bottom: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.sensor-dato-valor {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1565C0;
+  display: block;
+}
+
+.sensor-dato-unidad {
+  font-size: 0.8rem;
+  color: #1976D2;
+  font-weight: 500;
+}
+
+.sensor-fecha {
+  font-size: 0.8rem;
+  color: #1976D2;
+  font-weight: 500;
+}
+
+/* Filtros de cuartos */
+.filtro-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.filtro-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: auto;
+}
+
+.filtro-checkbox label {
+  cursor: pointer;
+  margin-bottom: 0;
+  font-weight: 500;
+  user-select: none;
+}
+
+/* Estado vacío */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  opacity: 0.5;
+  margin-bottom: 15px;
+}
+
+.empty-state h5 {
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.empty-state p {
+  color: #999;
+  margin: 0;
+}

@@ -69,6 +69,36 @@ try {
     requirePermiso('crear_usuarios');
 
     $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    
+    // AISLAMIENTO: Validar que la finca pertenece al usuario
+    if (!isSuperusuario() && !empty($data['codigo_finca'])) {
+        $sqlCheck = "SELECT f.codigo_empresa 
+                     FROM finca f
+                     WHERE f.codigo = ?";
+        $stCheck = $pdo->prepare($sqlCheck);
+        $stCheck->execute([$data['codigo_finca']]);
+        $finca = $stCheck->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$finca) {
+            respond(['ok'=>false,'error'=>'Finca no encontrada'],404);
+        }
+        
+        $fincaUsuario = getUserFinca();
+        $empresaUsuario = getUserEmpresa();
+        
+        if ($fincaUsuario && $data['codigo_finca'] !== $fincaUsuario) {
+            respond(['ok'=>false,'error'=>'No puede crear usuarios en otra finca'],403);
+        }
+        if (!$fincaUsuario && $empresaUsuario && $finca['codigo_empresa'] !== $empresaUsuario) {
+            respond(['ok'=>false,'error'=>'No puede crear usuarios en finca de otra empresa'],403);
+        }
+    } elseif (!isSuperusuario()) {
+        // Si no especificó finca, asignar la del usuario
+        $fincaUsuario = getUserFinca();
+        if ($fincaUsuario) {
+            $data['codigo_finca'] = $fincaUsuario;
+        }
+    }
 
     if ($model->crear($data)) {
       respond(['ok'=>true,'message'=>'Usuario creado correctamente']);

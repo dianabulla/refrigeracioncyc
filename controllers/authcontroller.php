@@ -132,7 +132,8 @@ class AuthController {
         $this->respond([
             'ok'   => true,
             'rol'  => $rol,
-            'user' => $_SESSION['user']
+            'user' => $_SESSION['user'],
+            'mensaje' => "Bienvenido {$_SESSION['user']['nombre']} - Rol: {$_SESSION['user']['codigo_rol']}"
         ]);
     }
 

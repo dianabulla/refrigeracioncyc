@@ -33,37 +33,56 @@ try {
       respond(['error' => 'codigo_sensor y tipo_reporte son requeridos'], 400);
     }
     
-    // Verificar que el sensor existe
-    $stmt = $pdo->prepare("SELECT codigo FROM sensor WHERE codigo = ?");
+    // Verificar que el sensor existe y pertenece a la empresa/finca del usuario
+    // (si el endpoint es usado por la web, si es IoT directo puede omitirse)
+    $stmt = $pdo->prepare("
+        SELECT s.codigo, c.codigo_finca, f.codigo_empresa
+        FROM sensor s
+        INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+        INNER JOIN finca f ON c.codigo_finca = f.codigo
+        WHERE s.codigo = ?
+    ");
     $stmt->execute([$codigo_sensor]);
-    if (!$stmt->fetch()) {
+    $sensor = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$sensor) {
       respond(['error' => 'Sensor no encontrado'], 404);
     }
     
-    // Preparar datos del reporte
+    // Preparar datos del reporte (todos los campos de la tabla)
     $reporteData = [
-      'codigo_sensor' => $codigo_sensor,
+      'codigo' => uniqid('IOT_', true),  // Generar código único para el reporte
+      'nombre' => $data['nombre'] ?? null,
       'tipo_reporte' => $tipo_reporte,
-      'temperatura' => !empty($data['temperatura']) ? floatval($data['temperatura']) : null,
-      'humedad' => !empty($data['humedad']) ? floatval($data['humedad']) : null,
-      'voltaje' => !empty($data['voltaje']) ? floatval($data['voltaje']) : null,
-      'amperaje' => !empty($data['amperaje']) ? floatval($data['amperaje']) : null,
-      'presion_s' => !empty($data['presion_s']) ? floatval($data['presion_s']) : null,
-      'presion_e' => !empty($data['presion_e']) ? floatval($data['presion_e']) : null,
-      'aire' => !empty($data['aire']) ? trim($data['aire']) : null,
-      'puerta' => !empty($data['puerta']) ? trim($data['puerta']) : null,
-      'otro' => !empty($data['otro']) ? trim($data['otro']) : null,
-      'fecha_captura' => date('Y-m-d H:i:s')
+      'activo' => 1,
+      'report_id' => $data['report_id'] ?? null,
+      'fecha_captura' => date('Y-m-d H:i:s'),
+      'fecha' => date('Y-m-d'),
+      'voltaje' => isset($data['voltaje']) ? floatval($data['voltaje']) : null,
+      'amperaje' => isset($data['amperaje']) ? floatval($data['amperaje']) : null,
+      'aire' => isset($data['aire']) ? floatval($data['aire']) : null,
+      'otro' => isset($data['otro']) ? floatval($data['otro']) : null,
+      'puerta' => isset($data['puerta']) ? floatval($data['puerta']) : null,
+      'presion_s' => isset($data['presion_s']) ? floatval($data['presion_s']) : null,
+      'presion_e' => isset($data['presion_e']) ? floatval($data['presion_e']) : null,
+      'temperatura' => isset($data['temperatura']) ? floatval($data['temperatura']) : null,
+      'humedad' => isset($data['humedad']) ? floatval($data['humedad']) : null,
+      'codigo_sensor' => $codigo_sensor,
+      'codigo_cuarto' => $data['codigo_cuarto'] ?? null
     ];
     
     // Insertar reporte
-    $id = $model->create($reporteData);
+    $success = $model->crear($reporteData);
     
-    respond([
-      'success' => true,
-      'message' => 'Datos recibidos correctamente',
-      'id' => $id
-    ], 201);
+    if ($success) {
+      respond([
+        'success' => true,
+        'message' => 'Datos recibidos correctamente',
+        'codigo' => $reporteData['codigo']
+      ], 201);
+    } else {
+      respond(['error' => 'Error al guardar el reporte'], 500);
+    }
   }
 
   else {

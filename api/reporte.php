@@ -43,30 +43,53 @@ try {
         }
 
         // Listado con filtros
-        $sql = "SELECT * FROM reporte WHERE 1=1";
+        $sql = "SELECT r.* FROM reporte r 
+                INNER JOIN sensor s ON r.codigo_sensor = s.codigo
+                INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+                INNER JOIN finca f ON c.codigo_finca = f.codigo
+                WHERE 1=1";
         $params = [];
+        
+        // AISLAMIENTO: Filtrar por empresa y finca del usuario
+        if (!isSuperusuario()) {
+            $fincaUsuario = getUserFinca();
+            $empresaUsuario = getUserEmpresa();
+            
+            if ($fincaUsuario) {
+                // Usuario de finca: solo ve datos de su finca
+                $sql .= " AND f.codigo = ?";
+                $params[] = $fincaUsuario;
+            } elseif ($empresaUsuario) {
+                // Usuario de empresa: ve datos de todas sus fincas
+                $sql .= " AND f.codigo_empresa = ?";
+                $params[] = $empresaUsuario;
+            } else {
+                // Sin empresa ni finca: no ve nada
+                respond(['error' => 'Usuario sin asignación de empresa/finca'], 403);
+            }
+        }
 
         if ($codigoSensor) {
-            $sql .= " AND codigo_sensor = ?";
+            $sql .= " AND r.codigo_sensor = ?";
             $params[] = $codigoSensor;
         }
 
         if ($codigoCuarto) {
-            $sql .= " AND codigo_cuarto = ?";
+            $sql .= " AND r.codigo_cuarto = ?";
             $params[] = $codigoCuarto;
         }
 
         if ($desde) {
-            $sql .= " AND fecha_captura >= ?";
+            $sql .= " AND r.fecha_captura >= ?";
             $params[] = $desde;
         }
 
         if ($hasta) {
-            $sql .= " AND fecha_captura <= ?";
+            $sql .= " AND r.fecha_captura <= ?";
             $params[] = $hasta;
         }
 
-        $sql .= " ORDER BY fecha_captura DESC, id DESC";
+        $sql .= " ORDER BY r.fecha_captura DESC, r.id DESC";
 
         $st = $pdo->prepare($sql);
         $st->execute($params);

@@ -45,9 +45,37 @@ try {
             out(['ok'=>false,'error'=>'Código y nombre son obligatorios'],422);
         }
 
+        // Verificar si la tabla tiene el campo codigo_empresa
+        try {
+            $columns = $pdo->query("DESCRIBE rol")->fetchAll(PDO::FETCH_COLUMN);
+            $tieneCodigoEmpresa = in_array('codigo_empresa', $columns);
+            
+            // Si tiene el campo y el usuario no es superusuario, asignar su empresa
+            if ($tieneCodigoEmpresa) {
+                $empresaUsuario = getUserEmpresa();
+                if ($empresaUsuario !== null) {
+                    $d['codigo_empresa'] = $empresaUsuario;
+                }
+                
+                // Si aún no tiene empresa y el campo es obligatorio, error
+                if (empty($d['codigo_empresa'])) {
+                    out(['ok'=>false,'error'=>'Debe especificar la empresa para el rol'],422);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("Error verificando estructura de tabla rol: " . $e->getMessage());
+        }
+
+        // Log para debugging
+        error_log("Intentando crear rol con datos: " . json_encode($d));
+
         $ok = $model->crear($d);
-        return $ok ? out(['ok'=>true,'message'=>'Rol creado'])
-                   : out(['ok'=>false,'error'=>'No se pudo crear (verifique campos requeridos o el código ya existe)'],500);
+        
+        if (!$ok) {
+            out(['ok'=>false,'error'=>'No se pudo crear el rol. Verifique que el código no exista. Revise los logs del servidor para más detalles.'],500);
+        }
+        
+        return out(['ok'=>true,'message'=>'Rol creado correctamente']);
     }
 
     // PUT

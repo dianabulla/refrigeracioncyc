@@ -63,6 +63,24 @@ try {
             // fallback por si envías x-www-form-urlencoded
             $data = $_POST;
         }
+        
+        // AISLAMIENTO: Validar empresa
+        if (!isSuperusuario()) {
+            $empresaUsuario = getUserEmpresa();
+            
+            if (!empty($data['codigo_empresa']) && $data['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok' => false, 'error' => 'No puede crear fincas en otra empresa'], 403);
+            }
+            
+            // Si no especificó empresa, asignar la del usuario
+            if (empty($data['codigo_empresa'])) {
+                if ($empresaUsuario) {
+                    $data['codigo_empresa'] = $empresaUsuario;
+                } else {
+                    respond(['ok' => false, 'error' => 'Debe especificar codigo_empresa'], 422);
+                }
+            }
+        }
 
         $ok = $fincaModel->crear($data);
         $ok ? respond(['ok' => true], 201)

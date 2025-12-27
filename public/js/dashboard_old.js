@@ -1,22 +1,9 @@
-// dashboard.js - Lógica mejorada del dashboard con gráficos claros e interactivos
+// dashboard.js - Lógica del dashboard de cuartos fríos
 const API_URL = "../api/dashboard.php";
 const API_REPORTE = "../api/reporte.php";
 
 let datosCompletos = [];
 let cuartosFiltrados = [];
-let timeSeriesChart = null;
-let comparisonMode = false;
-let sensoresComparacion = [];
-const coloresGrafico = [
-    'rgba(255, 99, 132, 1)',     // Rojo
-    'rgba(54, 162, 235, 1)',     // Azul
-    'rgba(75, 192, 192, 1)',     // Verde
-    'rgba(255, 206, 86, 1)',     // Amarillo
-    'rgba(153, 102, 255, 1)',    // Púrpura
-    'rgba(255, 159, 64, 1)',     // Naranja
-    'rgba(201, 203, 207, 1)',    // Gris
-    'rgba(255, 193, 7, 1)',      // Dorado
-];
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatos();
@@ -33,7 +20,12 @@ async function cargarDatos() {
         datosCompletos = response.data || [];
         cuartosFiltrados = [...datosCompletos];
         
+        // DEBUG: Ver estructura de datos
         console.log('Datos del dashboard:', datosCompletos);
+        if (datosCompletos.length > 0) {
+            console.log('Primer cuarto:', datosCompletos[0]);
+            console.log('Sensores del primer cuarto:', datosCompletos[0].sensores);
+        }
         
         generarFiltros();
         inicializarUIChart();
@@ -45,75 +37,14 @@ async function cargarDatos() {
     }
 }
 
-// ====== MODO COMPARACIÓN ======
-function inicializarComparisonMode() {
-    const btnComparison = document.getElementById('btnComparisonMode');
-    const comparisonList = document.getElementById('comparisonList');
-    const btnClearComparison = document.getElementById('btnClearComparison');
-    
-    btnComparison?.addEventListener('click', () => {
-        comparisonMode = !comparisonMode;
-        btnComparison.classList.toggle('active');
-        comparisonList.classList.toggle('active');
-        
-        if (!comparisonMode) {
-            sensoresComparacion = [];
-            document.querySelectorAll('.sensor-checkbox').forEach(cb => cb.checked = false);
-            actualizarGrafico();
-        }
-        actualizarBadgeComparison();
-    });
-    
-    btnClearComparison?.addEventListener('click', () => {
-        sensoresComparacion = [];
-        document.querySelectorAll('.sensor-checkbox').forEach(cb => cb.checked = false);
-        document.getElementById('comparisonItems').innerHTML = '';
-        actualizarGrafico();
-        actualizarBadgeComparison();
-    });
-}
-
-function actualizarBadgeComparison() {
-    const badge = document.querySelector('.comparison-badge');
-    if (badge) {
-        badge.textContent = sensoresComparacion.length;
-        badge.style.display = sensoresComparacion.length > 0 ? 'flex' : 'none';
-    }
-}
-
-function agregarSensorComparacion(codigoSensor, nombreSensor) {
-    if (!sensoresComparacion.find(s => s.codigo === codigoSensor)) {
-        sensoresComparacion.push({ codigo: codigoSensor, nombre: nombreSensor });
-        renderizarListaComparacion();
-        actualizarBadgeComparison();
-    }
-}
-
-function removerSensorComparacion(codigoSensor) {
-    sensoresComparacion = sensoresComparacion.filter(s => s.codigo !== codigoSensor);
-    const checkbox = document.querySelector(`input[value="${codigoSensor}"]`);
-    if (checkbox) checkbox.checked = false;
-    renderizarListaComparacion();
-    actualizarBadgeComparison();
-}
-
-function renderizarListaComparacion() {
-    const container = document.getElementById('comparisonItems');
-    container.innerHTML = sensoresComparacion.map(s => `
-        <div class="comparison-item">
-            <span>${s.nombre}</span>
-            <button class="btn btn-sm btn-outline-danger" onclick="removerSensorComparacion('${s.codigo}')">
-                <i class="bi bi-x"></i>
-            </button>
-        </div>
-    `).join('');
-}
-
 // ====== Gráfico Tiempo vs Datos ======
+let timeSeriesChart = null;
+
 function buildCuartoOptions() {
     const selCuarto = document.getElementById('selCuartoFiltro');
     if (!selCuarto) return;
 
+    // Construir opciones de cuartos únicos
     const cuartos = datosCompletos.map(c => ({ codigo: c.codigo, nombre: c.nombre }));
     selCuarto.innerHTML = '';
 
@@ -134,6 +65,7 @@ function buildTipoOptions() {
     const selTipo = document.getElementById('selTipoFiltro');
     if (!selTipo) return;
 
+    // Tipos a partir de sensores detectados
     const tiposSet = new Set();
     datosCompletos.forEach(cuarto => {
         Object.values(cuarto.sensores || {}).forEach(s => {
@@ -185,6 +117,7 @@ function repoblarSensoresDesdeFiltros(autorefresh = false) {
         });
     });
 
+    // Unicos por codigo
     const seen = new Set();
     selSensor.innerHTML = '';
     opciones.forEach(o => {
@@ -210,7 +143,7 @@ function repoblarSensoresDesdeFiltros(autorefresh = false) {
 }
 
 function inicializarUIChart() {
-    // Rango por defecto: día actual
+    // Rango por defecto: día actual (00:00 → ahora) para evitar consultas largas
     const ahora = new Date();
     const inicioDia = new Date();
     inicioDia.setHours(0, 0, 0, 0);
@@ -226,12 +159,12 @@ function inicializarUIChart() {
         inpHasta.value = toLocalInput(ahora);
     }
 
+    // Poblar filtros y sensores
     buildCuartoOptions();
     buildTipoOptions();
     repoblarSensoresDesdeFiltros();
-    inicializarComparisonMode();
 
-    // Listeners
+    // Listeners de filtros
     document.getElementById('selCuartoFiltro')?.addEventListener('change', () => {
         repoblarSensoresDesdeFiltros(true);
     });
@@ -239,17 +172,17 @@ function inicializarUIChart() {
         repoblarSensoresDesdeFiltros(true);
     });
 
-    document.getElementById('btnActualizarGrafico')?.addEventListener('click', actualizarGrafico);
-    document.getElementById('btnExportData')?.addEventListener('click', exportarDatos);
+    const btn = document.getElementById('btnActualizarGrafico');
+    if (btn) btn.addEventListener('click', actualizarGrafico);
 
-    // Rangos rápidos
-    document.getElementById('btnRange1h')?.addEventListener('click', () => setRangeHours(1));
+    // Presets de rango
     document.getElementById('btnRange2h')?.addEventListener('click', () => setRangeHours(2));
     document.getElementById('btnRange6h')?.addEventListener('click', () => setRangeHours(6));
     document.getElementById('btnRange24h')?.addEventListener('click', () => setRangeHours(24));
     document.getElementById('btnRange7d')?.addEventListener('click', () => setRangeDays(7));
     document.getElementById('btnRange30d')?.addEventListener('click', () => setRangeDays(30));
 
+    // Auto-load first render si hay sensor disponible
     if (document.getElementById('selSensor')?.value) {
         actualizarGrafico();
     }
@@ -282,335 +215,125 @@ function setRange(desde, hasta) {
 }
 
 async function actualizarGrafico() {
+    const selSensor = document.getElementById('selSensor');
     const selMetrica = document.getElementById('selMetrica');
     const inpDesde = document.getElementById('inpDesde');
     const inpHasta = document.getElementById('inpHasta');
     const msg = document.getElementById('chartMensaje');
-    
+
+    if (!selSensor?.value) {
+        msg.textContent = 'Seleccione un sensor para visualizar.';
+        return;
+    }
+
+    const sensor = selSensor.value;
     const metrica = selMetrica?.value || 'temperatura';
     const desde = inpDesde?.value ? new Date(inpDesde.value) : null;
     const hasta = inpHasta?.value ? new Date(inpHasta.value) : null;
 
+    // Format as MySQL datetime
     const fmt = (d) => {
         const pad = (n) => String(n).padStart(2, '0');
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
     };
 
-    // Si estamos en modo comparación
-    if (comparisonMode && sensoresComparacion.length > 0) {
-        msg.textContent = 'Cargando datos de sensores…';
-        await cargarYRenderizarComparacion(sensoresComparacion, metrica, desde, hasta, fmt);
-    } else {
-        // Modo simple - un sensor
-        const selSensor = document.getElementById('selSensor');
-        if (!selSensor?.value) {
-            msg.textContent = 'Seleccione un sensor para visualizar.';
+    const params = new URLSearchParams();
+    params.set('codigo_sensor', sensor);
+    if (desde) params.set('desde', fmt(desde));
+    if (hasta) params.set('hasta', fmt(hasta));
+
+    msg.textContent = 'Cargando datos…';
+
+    try {
+        const res = await fetch(`${API_REPORTE}?${params.toString()}`);
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+            msg.textContent = data.error || 'No se pudo obtener datos';
             return;
         }
 
-        const params = new URLSearchParams();
-        params.set('codigo_sensor', selSensor.value);
-        if (desde) params.set('desde', fmt(desde));
-        if (hasta) params.set('hasta', fmt(hasta));
+        // Build dataset: order by fecha_captura ascending
+        const registros = data
+            .filter(r => r && r.fecha_captura)
+            .sort((a,b) => new Date(a.fecha_captura) - new Date(b.fecha_captura));
 
-        msg.textContent = 'Cargando datos…';
-
-        try {
-            const res = await fetch(`${API_REPORTE}?${params.toString()}`);
-            const data = await res.json();
-            if (!Array.isArray(data)) {
-                msg.textContent = data.error || 'No se pudo obtener datos';
-                return;
-            }
-
-            const registros = data
-                .filter(r => r && r.fecha_captura)
-                .sort((a,b) => new Date(a.fecha_captura) - new Date(b.fecha_captura));
-
-            const labels = registros.map(r => new Date(r.fecha_captura));
-            const values = registros.map(r => {
-                const v = r[metrica];
-                if (v === null || v === undefined) return null;
-                const num = parseFloat(v);
-                return Number.isFinite(num) ? num : null;
-            });
-
-            renderChart([{ labels, values, label: labelPorTipo(metrica), metrica }], metrica);
-            calcularEstadisticas(values);
-            msg.textContent = registros.length ? '' : 'Sin datos en el rango seleccionado.';
-        } catch (e) {
-            console.error(e);
-            msg.textContent = 'Error al cargar datos.';
-        }
-    }
-}
-
-async function cargarYRenderizarComparacion(sensores, metrica, desde, hasta, fmt) {
-    const msg = document.getElementById('chartMensaje');
-    
-    try {
-        const promesas = sensores.map(async (sensor) => {
-            const params = new URLSearchParams();
-            params.set('codigo_sensor', sensor.codigo);
-            if (desde) params.set('desde', fmt(desde));
-            if (hasta) params.set('hasta', fmt(hasta));
-
-            const res = await fetch(`${API_REPORTE}?${params.toString()}`);
-            const data = await res.json();
-
-            if (Array.isArray(data)) {
-                const registros = data
-                    .filter(r => r && r.fecha_captura)
-                    .sort((a,b) => new Date(a.fecha_captura) - new Date(b.fecha_captura));
-
-                return {
-                    labels: registros.map(r => new Date(r.fecha_captura)),
-                    values: registros.map(r => {
-                        const v = r[metrica];
-                        if (v === null || v === undefined) return null;
-                        const num = parseFloat(v);
-                        return Number.isFinite(num) ? num : null;
-                    }),
-                    label: sensor.nombre,
-                    metrica,
-                    codigo: sensor.codigo
-                };
-            }
-            return null;
+        const labels = registros.map(r => new Date(r.fecha_captura));
+        const values = registros.map(r => {
+            const v = r[metrica];
+            if (v === null || v === undefined) return null;
+            const num = parseFloat(v);
+            return Number.isFinite(num) ? num : null;
         });
 
-        const datasetsInfo = (await Promise.all(promesas)).filter(d => d !== null);
-        renderChart(datasetsInfo, metrica);
-        
-        // Calcular stats del primero
-        if (datasetsInfo.length > 0) {
-            calcularEstadisticas(datasetsInfo[0].values);
-        }
-        
-        msg.textContent = datasetsInfo.length > 0 ? '' : 'Sin datos en el rango seleccionado.';
+        renderChart(labels, values, metrica);
+        msg.textContent = registros.length ? '' : 'Sin datos en el rango seleccionado.';
     } catch (e) {
         console.error(e);
         msg.textContent = 'Error al cargar datos.';
     }
 }
 
-function renderChart(datasetsInfo, metrica) {
+function renderChart(labels, values, metrica) {
     const ctx = document.getElementById('chartTimeSeries');
     if (!ctx) return;
-    
+    // Destroy previous
     if (timeSeriesChart) {
         timeSeriesChart.destroy();
         timeSeriesChart = null;
     }
 
     const unidad = unidadPorTipo(metrica);
-    
-    // Convertir labels a strings para evitar problemas con fechas
-    const labels = datasetsInfo[0]?.labels || [];
-    const labelStrings = labels.map(d => {
-        if (d instanceof Date) {
-            return d.toLocaleString('es-ES', { 
-                year: 'numeric', 
-                month: '2-digit', 
-                day: '2-digit',
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-        }
-        return d;
-    });
-    
-    // Crear datasets con colores distintos
-    const datasets = datasetsInfo.map((info, idx) => {
-        const colorBase = coloresGrafico[idx % coloresGrafico.length];
-        const bgColor = colorBase.replace('1)', '0.15)');
-        
-        return {
-            label: info.label,
-            data: info.values,
-            segment: { borderColor: colorBase },
-            backgroundColor: bgColor,
-            borderColor: colorBase,
-            borderWidth: 2.5,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-            pointBackgroundColor: colorBase,
-            pointBorderColor: '#fff',
-            pointBorderWidth: 1,
-            spanGaps: true,
-            tension: 0.3
-        };
-    });
 
     timeSeriesChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labelStrings,
-            datasets: datasets
+            labels: labels,
+            datasets: [{
+                label: `${labelPorTipo(metrica)} ${unidad ? '('+unidad+')' : ''}`,
+                data: values,
+                segment: { borderColor: 'rgba(53, 162, 235, 1)' },
+                backgroundColor: 'rgba(53, 162, 235, 0.2)',
+                borderColor: 'rgba(53, 162, 235, 0.8)',
+                borderWidth: 2,
+                pointRadius: 2,
+                pointHoverRadius: 4,
+                spanGaps: true,
+                tension: 0.2,
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            parsing: false,
             scales: {
                 x: {
-                    ticks: { 
-                        autoSkip: true,
-                        maxTicksLimit: 10,
-                        maxRotation: 45,
-                        minRotation: 0
-                    },
-                    grid: { 
-                        display: true,
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
+                    type: 'time',
+                    time: { unit: 'hour', tooltipFormat: 'yyyy-MM-dd HH:mm' },
+                    ticks: { autoSkip: true, maxRotation: 0 },
+                    grid: { display: false }
                 },
                 y: {
                     beginAtZero: false,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                        drawBorder: true
-                    },
-                    ticks: { 
-                        callback: v => `${v}${unidad ? ' ' + unidad : ''}`,
-                        font: { size: 11 }
-                    }
+                    ticks: { callback: v => `${v}${unidad ? ' ' + unidad : ''}` }
                 }
             },
             plugins: {
-                legend: { 
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        font: { size: 12, weight: 'bold' },
-                        padding: 15,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
+                legend: { display: true },
                 tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    padding: 12,
-                    titleFont: { size: 13, weight: 'bold' },
-                    bodyFont: { size: 12 },
-                    displayColors: true,
-                    borderColor: 'rgba(255,255,255,0.2)',
-                    borderWidth: 1,
                     callbacks: {
-                        title: (ctx) => {
-                            if (ctx[0]) {
-                                return ctx[0].label;
-                            }
-                            return '';
-                        },
                         label: (ctx) => {
                             const v = ctx.parsed.y;
-                            if (v === null || v === undefined) return '';
-                            return `${ctx.dataset.label}: ${v.toFixed(2)}${unidad ? ' ' + unidad : ''}`;
+                            return `${labelPorTipo(metrica)}: ${v}${unidad ? ' ' + unidad : ''}`;
                         }
                     }
                 }
             }
         }
     });
-
-    // Actualizar leyenda
-    actualizarLeyenda(datasetsInfo, coloresGrafico);
 }
 
-function actualizarLeyenda(datasetsInfo, colores) {
-    const legendDiv = document.getElementById('chartLegend');
-    if (!legendDiv) return;
-
-    legendDiv.innerHTML = datasetsInfo.map((info, idx) => {
-        const color = colores[idx % colores.length];
-        return `
-            <div class="chart-legend-item">
-                <div class="chart-legend-color" style="background: ${color};"></div>
-                <span>${info.label}</span>
-            </div>
-        `;
-    }).join('');
-}
-
-function calcularEstadisticas(values) {
-    const validValues = values.filter(v => v !== null && v !== undefined && Number.isFinite(v));
-    if (validValues.length === 0) {
-        document.getElementById('statsContainer').innerHTML = '<div class="text-muted">No hay datos para mostrar estadísticas</div>';
-        return;
-    }
-
-    const minVal = Math.min(...validValues);
-    const maxVal = Math.max(...validValues);
-    const promVal = validValues.reduce((a, b) => a + b, 0) / validValues.length;
-    
-    const metrica = document.getElementById('selMetrica')?.value || 'temperatura';
-    const unidad = unidadPorTipo(metrica);
-    
-    let tipoClase = 'stat-box';
-    if (metrica === 'temperatura') tipoClase += ' temp';
-    else if (metrica === 'humedad') tipoClase += ' humidity';
-    else if (metrica === 'voltaje') tipoClase += ' voltage';
-
-    document.getElementById('statsContainer').innerHTML = `
-        <div class="${tipoClase}">
-            <div class="stat-label">Valor Máximo</div>
-            <div class="stat-value">${maxVal.toFixed(2)}</div>
-            <div class="stat-subtext">${unidad}</div>
-        </div>
-        <div class="${tipoClase}">
-            <div class="stat-label">Valor Mínimo</div>
-            <div class="stat-value">${minVal.toFixed(2)}</div>
-            <div class="stat-subtext">${unidad}</div>
-        </div>
-        <div class="${tipoClase}">
-            <div class="stat-label">Promedio</div>
-            <div class="stat-value">${promVal.toFixed(2)}</div>
-            <div class="stat-subtext">${unidad}</div>
-        </div>
-        <div class="${tipoClase}">
-            <div class="stat-label">Total Datos</div>
-            <div class="stat-value">${validValues.length}</div>
-            <div class="stat-subtext">registros</div>
-        </div>
-    `;
-}
-
-function exportarDatos() {
-    if (!timeSeriesChart || !timeSeriesChart.data.labels) {
-        alert('No hay datos para exportar');
-        return;
-    }
-
-    const labels = timeSeriesChart.data.labels;
-    const datasets = timeSeriesChart.data.datasets;
-    
-    let csv = 'Fecha/Hora';
-    datasets.forEach(ds => {
-        csv += `,${ds.label}`;
-    });
-    csv += '\n';
-
-    labels.forEach((label, idx) => {
-        csv += new Date(label).toLocaleString('es-ES');
-        datasets.forEach(ds => {
-            csv += `,${ds.data[idx] || ''}`;
-        });
-        csv += '\n';
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `datos_${new Date().getTime()}.csv`;
-    a.click();
-}
-
-// ====== Tarjetas de cuartos ======
 function generarFiltros() {
     const contenedor = document.getElementById("filtrosCuartos");
-    if (!contenedor) return;
-    
     contenedor.innerHTML = "";
     
     datosCompletos.forEach(cuarto => {
@@ -646,8 +369,6 @@ function renderizarCuartos() {
     const contenedor = document.getElementById("contenedorCuartos");
     const mensajeCarga = document.getElementById("mensajeCarga");
     
-    if (!contenedor) return;
-    
     mensajeCarga.style.display = "none";
     contenedor.innerHTML = "";
     
@@ -674,6 +395,7 @@ function crearTarjetaCuarto(cuarto) {
     const col = document.createElement("div");
     col.className = "col-lg-6 col-xl-4";
     
+    // Obtener sensores del cuarto y ubicar los de temperatura y humedad
     const sensores = Object.values(cuarto.sensores);
     const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
     const sensorHum  = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
@@ -683,6 +405,7 @@ function crearTarjetaCuarto(cuarto) {
     const humVal   = sensorHum?.ultima?.valor ?? null;
     const humProm  = sensorHum?.promedio?.prom_dia ?? null;
 
+    // Sensores para la lista (excluye temperatura y humedad)
     const sensoresLista = sensores.filter(s => {
         const t = (s.tipo || '').toLowerCase();
         return t !== 'temperatura' && t !== 'humedad';
@@ -697,32 +420,43 @@ function crearTarjetaCuarto(cuarto) {
         </div>
         
         <div class="cuarto-body">
+            <!-- Indicadores principales: siempre Temperatura y Humedad -->
             <div class="indicator-block">
                 <div class="indicator-item">
                     <div class="indicator-label">Temperatura</div>
                     <div class="indicator-value">
-                        ${tempVal !== null && tempVal !== undefined ? `${parseFloat(tempVal).toFixed(1)}°C` : 'Sin datos'}
+                        ${tempVal !== null ? `${parseFloat(tempVal).toFixed(1)} °C` : '—'}
                     </div>
-                    <div class="indicator-promedio">Prom: ${tempProm !== null && tempProm !== undefined ? `${parseFloat(tempProm).toFixed(1)}°C` : '—'}</div>
+                    <small class="text-muted">Promedio: ${tempProm !== null && tempProm !== undefined ? `${parseFloat(tempProm).toFixed(1)} °C` : 'Sin datos'}</small>
                 </div>
                 <div class="indicator-item">
                     <div class="indicator-label">Humedad</div>
                     <div class="indicator-value">
-                        ${humVal !== null && humVal !== undefined ? `${parseFloat(humVal).toFixed(1)}%` : 'Sin datos'}
+                        ${humVal !== null ? `${parseFloat(humVal).toFixed(1)} %` : '—'}
                     </div>
-                    <div class="indicator-promedio">Prom: ${humProm !== null && humProm !== undefined ? `${parseFloat(humProm).toFixed(1)}%` : '—'}</div>
+                    <small class="text-muted">Promedio: ${humProm !== null && humProm !== undefined ? `${parseFloat(humProm).toFixed(1)} %` : 'Sin datos'}</small>
                 </div>
             </div>
-            ${sensoresLista.length > 0 ? `
+
+            ${tempVal !== null ? `
+            <!-- Termómetro visual (solo si hay temperatura) -->
+            <div class="thermometer-container">
+                <div class="thermometer-bar" style="height: ${Math.min(parseFloat(tempVal) * 5, 100)}%">
+                    <span class="thermometer-temp">${parseFloat(tempVal).toFixed(1)}°C</span>
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- Toggle sensores -->
             <button class="toggle-sensors collapsed" onclick="toggleSensores(this, '${cuarto.codigo}')">
                 <i class="bi bi-chevron-right"></i>
                 <span>Ver otros sensores (${sensoresLista.length})</span>
             </button>
             
+            <!-- Lista de sensores desplegable -->
             <div class="sensores-list" id="sensores_${cuarto.codigo}">
                 ${generarSensoresList(sensoresLista)}
             </div>
-            ` : ''}
         </div>
     `;
     
@@ -751,8 +485,8 @@ function generarSensoresList(sensores) {
                       : tipo === 'amperaje' ? 'bi-speedometer2'
                       : 'bi-activity';
 
-        const valorTexto = valor !== null ? `${parseFloat(valor).toFixed(tipo === 'amperaje' ? 2 : 1)} ${unidadPorTipo(tipo)}` : '—';
-        const promTexto = prom !== null && prom !== undefined ? `${parseFloat(prom).toFixed(tipo === 'amperaje' ? 2 : 1)} ${unidadPorTipo(tipo)}` : 'Sin datos';
+        const valorTexto = valor !== null ? `${parseFloat(valor).toFixed( tipo === 'amperaje' ? 2 : 1 )} ${unidadPorTipo(tipo)}` : '—';
+        const promTexto = prom !== null && prom !== undefined ? `${parseFloat(prom).toFixed( tipo === 'amperaje' ? 2 : 1 )} ${unidadPorTipo(tipo)}` : 'Sin datos';
 
         const datosHtml = `
             <div class="sensor-dato">
@@ -762,15 +496,9 @@ function generarSensoresList(sensores) {
             </div>
         `;
 
-        const checkboxHtml = comparisonMode ? `
-            <input type="checkbox" class="sensor-checkbox" value="${sensor.codigo}" 
-                   onchange="actualizarSensorComparacion(this, '${sensor.codigo}', '${sensor.nombre}')">
-        ` : '';
-
         html += `
             <div class="sensor-item">
                 <div class="sensor-nombre">
-                    ${checkboxHtml}
                     <i class="bi ${icono}"></i>
                     ${sensor.nombre}
                 </div>
@@ -783,15 +511,6 @@ function generarSensoresList(sensores) {
     });
 
     return html;
-}
-
-function actualizarSensorComparacion(checkbox, codigo, nombre) {
-    if (checkbox.checked) {
-        agregarSensorComparacion(codigo, nombre);
-    } else {
-        removerSensorComparacion(codigo);
-    }
-    actualizarGrafico();
 }
 
 function toggleSensores(button, codigoCuarto) {
@@ -846,13 +565,11 @@ function mostrarError(mensaje) {
     const contenedor = document.getElementById("contenedorCuartos");
     const mensajeCarga = document.getElementById("mensajeCarga");
     
-    if (mensajeCarga) {
-        mensajeCarga.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                ${mensaje}
-            </div>
-        `;
-        mensajeCarga.style.display = "block";
-    }
+    mensajeCarga.innerHTML = `
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            ${mensaje}
+        </div>
+    `;
+    mensajeCarga.style.display = "block";
 }

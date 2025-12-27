@@ -99,21 +99,26 @@ async function editarRol(codigo) {
 
     // Marcar los permisos que tiene el rol
     if (r.permisos) {
-        let permisos = [];
+        let permisos = {};
+        
         // Si permisos es string JSON, parsearlo
         if (typeof r.permisos === 'string') {
             try {
                 permisos = JSON.parse(r.permisos);
             } catch (e) {
-                permisos = [];
+                console.error('Error parseando permisos:', e);
+                permisos = {};
             }
-        } else if (Array.isArray(r.permisos)) {
+        } else if (typeof r.permisos === 'object') {
             permisos = r.permisos;
         }
 
-        permisos.forEach(permiso => {
-            const checkbox = document.getElementById(permiso);
-            if (checkbox) checkbox.checked = true;
+        // Marcar checkboxes según el objeto de permisos
+        Object.keys(permisos).forEach(permiso => {
+            if (permisos[permiso] === true) {
+                const checkbox = document.getElementById(permiso);
+                if (checkbox) checkbox.checked = true;
+            }
         });
     }
 
@@ -159,19 +164,41 @@ async function eliminarRol(codigo) {
 // TOMAR CAMPOS
 // -----------------------------------------
 function tomarDatos() {
-    // Obtener todos los checkboxes de permisos marcados
-    const permisos = [];
-    document.querySelectorAll('.permiso-check:checked').forEach(cb => {
-        permisos.push(cb.value);
+    // Convertir permisos de array a objeto JSON con booleanos
+    const permisosObj = {};
+    
+    // Todos los permisos posibles
+    const todosLosPermisos = [
+        'ver_usuarios', 'crear_usuarios', 'editar_usuarios', 'eliminar_usuarios',
+        'ver_fincas', 'crear_fincas', 'editar_fincas', 'eliminar_fincas',
+        'ver_cuartos', 'crear_cuartos', 'editar_cuartos', 'eliminar_cuartos',
+        'ver_sensores', 'crear_sensores', 'editar_sensores', 'eliminar_sensores',
+        'ver_componentes', 'crear_componentes', 'editar_componentes', 'eliminar_componentes',
+        'ver_mantenimientos', 'crear_mantenimientos', 'editar_mantenimientos', 'eliminar_mantenimientos',
+        'ver_reportes', 'exportar_reportes'
+    ];
+    
+    // Marcar cada permiso como true/false según esté marcado
+    todosLosPermisos.forEach(permiso => {
+        const checkbox = document.getElementById(permiso);
+        permisosObj[permiso] = checkbox ? checkbox.checked : false;
     });
 
-    return {
+    const data = {
         codigo: document.getElementById("codigo").value.trim(),
         nombre: document.getElementById("nombre").value.trim(),
         descripcion: document.getElementById("descripcion").value.trim(),
         activo: document.getElementById("activo").checked ? 1 : 0,
-        permisos: permisos
+        permisos: permisosObj
     };
+    
+    // Agregar codigo_empresa si existe el campo
+    const codigoEmpresaField = document.getElementById("codigo_empresa");
+    if (codigoEmpresaField) {
+        data.codigo_empresa = codigoEmpresaField.value.trim();
+    }
+    
+    return data;
 }
 
 // -----------------------------------------
