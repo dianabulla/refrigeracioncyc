@@ -943,16 +943,28 @@ table tbody td {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-.stat-box.temp {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+.stat-box.temperatura {
+  background: linear-gradient(135deg, #ff7043 0%, #ff5722 100%);
 }
 
-.stat-box.humidity {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+.stat-box.humedad {
+  background: linear-gradient(135deg, #42a5f5 0%, #2196F3 100%);
 }
 
-.stat-box.voltage {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+.stat-box.voltaje {
+  background: linear-gradient(135deg, #ffca28 0%, #ffc107 100%);
+}
+
+.stat-box.amperaje {
+  background: linear-gradient(135deg, #ab47bc 0%, #9c27b0 100%);
+}
+
+.stat-box.presion_s {
+  background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+}
+
+.stat-box.presion_e {
+  background: linear-gradient(135deg, #26a69a 0%, #009688 100%);
 }
 
 .stat-label {
@@ -1154,6 +1166,7 @@ table tbody td {
   color: white;
   border: none !important;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 }
 
 .cuarto-card:hover {
@@ -1328,7 +1341,7 @@ table tbody td {
   margin-bottom: 10px;
   font-weight: 700;
   font-size: 1.05rem;
-  color: #1565C0;
+  color: white;
 }
 
 .sensor-checkbox {
@@ -1350,7 +1363,7 @@ table tbody td {
 
 .sensor-dato-label {
   font-size: 0.8rem;
-  color: #0D47A1;
+  color: #E3F2FD;
   margin-bottom: 4px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1361,19 +1374,19 @@ table tbody td {
 .sensor-dato-valor {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #1565C0;
+  color: white;
   display: block;
 }
 
 .sensor-dato-unidad {
   font-size: 0.8rem;
-  color: #1976D2;
+  color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
 }
 
 .sensor-fecha {
   font-size: 0.8rem;
-  color: #1976D2;
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
 }
 

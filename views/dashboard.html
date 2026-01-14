@@ -142,27 +142,28 @@
               <label class="form-label small">Cuarto Frío</label>
               <select id="selCuartoFiltro" class="form-select form-select-sm"></select>
             </div>
-            <div style="flex: 1; min-width: 200px;">
-              <label class="form-label small">Tipo Sensor</label>
-              <select id="selTipoFiltro" class="form-select form-select-sm"></select>
-            </div>
             <div style="flex: 1; min-width: 220px;">
               <label class="form-label small">Sensor</label>
               <select id="selSensor" class="form-select form-select-sm"></select>
             </div>
-            <div style="flex: 1; min-width: 160px;">
-              <label class="form-label small">Métrica</label>
-              <select id="selMetrica" class="form-select form-select-sm">
-                <option value="temperatura">Temperatura (°C)</option>
-                <option value="humedad">Humedad (%)</option>
-                <option value="voltaje">Voltaje (V)</option>
-                <option value="amperaje">Amperaje (A)</option>
-                <option value="presion_s">Presión Succión (PSI)</option>
-                <option value="presion_e">Presión Entrada (PSI)</option>
-                <option value="aire">Aire</option>
-                <option value="puerta">Puerta</option>
-                <option value="otro">Otro</option>
-              </select>
+            <div style="flex: 1; min-width: 220px;">
+              <label class="form-label small">Métricas a Mostrar</label>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="dropdownMetricas" data-bs-toggle="dropdown">
+                  <span id="metricasSeleccionadas">Seleccionar métricas</span>
+                </button>
+                <ul class="dropdown-menu p-2" aria-labelledby="dropdownMetricas" id="listMetricas">
+                  <li><label class="dropdown-item"><input type="checkbox" value="temperatura" class="me-2" checked> Temperatura (°C)</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="humedad" class="me-2"> Humedad (%)</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="voltaje" class="me-2"> Voltaje (V)</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="amperaje" class="me-2"> Amperaje (A)</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="presion_s" class="me-2"> Presión Succión (PSI)</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="presion_e" class="me-2"> Presión Entrada (PSI)</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="aire" class="me-2"> Aire</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="puerta" class="me-2"> Puerta</label></li>
+                  <li><label class="dropdown-item"><input type="checkbox" value="otro" class="me-2"> Otro</label></li>
+                </ul>
+              </div>
             </div>
           </div>
 

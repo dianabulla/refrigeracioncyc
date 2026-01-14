@@ -73,6 +73,7 @@ try {
                 'aire'        => 'aire',
                 'otro'        => 'otro',
                 'puerta'      => 'puerta',
+                'temperatura_humedad' => ['temperatura', 'humedad'],  // Sensor que mide ambos
             ];
 
             if (!isset($campoPorTipo[$tipoSensor])) {
@@ -80,43 +81,56 @@ try {
                 continue;
             }
 
-            $campo = $campoPorTipo[$tipoSensor];
+            $campos = $campoPorTipo[$tipoSensor];
+            // Si es un array, el sensor mide múltiples cosas
+            $esMultiple = is_array($campos);
+            $camposArray = $esMultiple ? $campos : [$campos];
 
-            // Última lectura del tipo específico
-            $sqlUltima = "SELECT $campo AS valor, fecha_captura
-                          FROM reporte 
-                          WHERE codigo_sensor = ? AND tipo_reporte = ?
-                          ORDER BY fecha_captura DESC 
-                          LIMIT 1";
-            $stUltima = $pdo->prepare($sqlUltima);
-            $stUltima->execute([$codSensor, $tipoSensor]);
-            $ultimaRow = $stUltima->fetch(PDO::FETCH_ASSOC) ?: ['valor' => null, 'fecha_captura' => null];
+            // Procesar cada campo del sensor
+            foreach ($camposArray as $campo) {
+                // Para sensores múltiples, buscar por el tipo_sensor completo
+                // Para sensores simples, buscar por el campo (que es el tipo)
+                $tipoReporteBusqueda = $esMultiple ? $tipoSensor : $campo;
 
-            // Promedio de los últimos 100 registros disponibles
-            $sqlPromedioDia = "SELECT 
-                                AVG(CAST($campo AS DECIMAL(10,2))) AS prom_dia
-                            FROM (
-                                SELECT $campo
-                                FROM reporte 
-                                WHERE codigo_sensor = ?
-                                  AND $campo IS NOT NULL
-                                ORDER BY fecha_captura DESC
-                                LIMIT 100
-                            ) AS ultimos";
-            $stPromedioDia = $pdo->prepare($sqlPromedioDia);
-            $stPromedioDia->execute([$codSensor]);
-            $promDiaRow = $stPromedioDia->fetch(PDO::FETCH_ASSOC) ?: ['prom_dia' => null];
+                // Última lectura del tipo específico
+                $sqlUltima = "SELECT $campo AS valor, fecha_captura
+                              FROM reporte 
+                              WHERE codigo_sensor = ? AND tipo_reporte = ?
+                              ORDER BY fecha_captura DESC 
+                              LIMIT 1";
+                $stUltima = $pdo->prepare($sqlUltima);
+                $stUltima->execute([$codSensor, $tipoReporteBusqueda]);
+                $ultimaRow = $stUltima->fetch(PDO::FETCH_ASSOC) ?: ['valor' => null, 'fecha_captura' => null];
 
-            $datosUltimas[$codSensor] = [
-                'nombre'  => $sensor['nombre'],
-                'codigo'  => $codSensor,
-                'tipo'    => $tipoSensor,
-                'campo'   => $campo,
-                'ultima'  => $ultimaRow,
-                'promedio'=> [
-                    'prom_dia'   => $promDiaRow['prom_dia']
-                ]
-            ];
+                // Promedio de los últimos 100 registros disponibles
+                $sqlPromedioDia = "SELECT 
+                                    AVG(CAST($campo AS DECIMAL(10,2))) AS prom_dia
+                                FROM (
+                                    SELECT $campo
+                                    FROM reporte 
+                                    WHERE codigo_sensor = ? AND tipo_reporte = ?
+                                      AND $campo IS NOT NULL
+                                    ORDER BY fecha_captura DESC
+                                    LIMIT 100
+                                ) AS ultimos";
+                $stPromedioDia = $pdo->prepare($sqlPromedioDia);
+                $stPromedioDia->execute([$codSensor, $tipoReporteBusqueda]);
+                $promDiaRow = $stPromedioDia->fetch(PDO::FETCH_ASSOC) ?: ['prom_dia' => null];
+
+                // Usar el nombre del sensor + el campo si es múltiple
+                $nombreMostrar = $esMultiple ? $sensor['nombre'] . ' (' . ucfirst($campo) . ')' : $sensor['nombre'];
+                
+                $datosUltimas[$codSensor . '_' . $campo] = [
+                    'nombre'  => $nombreMostrar,
+                    'codigo'  => $codSensor,
+                    'tipo'    => $campo,  // Siempre usar el campo específico como tipo
+                    'campo'   => $campo,
+                    'ultima'  => $ultimaRow,
+                    'promedio'=> [
+                        'prom_dia'   => $promDiaRow['prom_dia']
+                    ]
+                ];
+            }
         }
         
         $resultado[] = [
