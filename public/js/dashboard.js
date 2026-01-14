@@ -7,6 +7,17 @@ let cuartosFiltrados = [];
 let timeSeriesChart = null;
 let comparisonMode = false;
 let sensoresComparacion = [];
+// Colores específicos por tipo de sensor/métrica
+const coloresPorTipo = {
+    temperatura: 'rgba(255, 87, 51, 1)',        // Rojo-naranja (calor)
+    humedad: 'rgba(33, 150, 243, 1)',           // Azul (agua)
+    voltaje: 'rgba(255, 193, 7, 1)',            // Amarillo dorado (electricidad)
+    amperaje: 'rgba(156, 39, 176, 1)',          // Púrpura (corriente)
+    presion_s: 'rgba(76, 175, 80, 1)',          // Verde (presión succión)
+    presion_e: 'rgba(0, 150, 136, 1)',          // Verde azulado (presión entrada)
+};
+
+// Colores de respaldo para múltiples sensores del mismo tipo
 const coloresGrafico = [
     'rgba(255, 99, 132, 1)',     // Rojo
     'rgba(54, 162, 235, 1)',     // Azul
@@ -15,8 +26,17 @@ const coloresGrafico = [
     'rgba(153, 102, 255, 1)',    // Púrpura
     'rgba(255, 159, 64, 1)',     // Naranja
     'rgba(201, 203, 207, 1)',    // Gris
-    'rgba(255, 193, 7, 1)',      // Dorado
 ];
+
+// Función para obtener color según tipo y métrica
+function obtenerColorPorTipo(metrica, indiceSensor = 0) {
+    // Primero intentar obtener color específico por métrica
+    if (coloresPorTipo[metrica]) {
+        return coloresPorTipo[metrica];
+    }
+    // Si no hay color específico, usar colores de respaldo
+    return coloresGrafico[indiceSensor % coloresGrafico.length];
+}
 
 // Rangos por defecto (pueden ser personalizados)
 let rangosTemperatura = { min: -30, max: -5 };
@@ -34,7 +54,27 @@ function inicializarBotones() {
         btnComparison2.addEventListener('click', () => {
             comparisonMode = !comparisonMode;
             btnComparison2.classList.toggle('active');
-            sensoresComparacion = [];
+            
+            // Sincronizar con el otro botón
+            const btnComparison = document.getElementById('btnComparisonMode');
+            if (btnComparison) {
+                btnComparison.classList.toggle('active');
+            }
+            
+            // Mostrar/ocultar panel de comparación
+            const comparisonList = document.getElementById('comparisonList');
+            if (comparisonList) {
+                comparisonList.classList.toggle('active');
+            }
+            
+            if (!comparisonMode) {
+                sensoresComparacion = [];
+                document.querySelectorAll('.sensor-checkbox').forEach(cb => cb.checked = false);
+            }
+            
+            // Re-renderizar tarjetas para mostrar/ocultar checkboxes
+            renderizarCuartos();
+            actualizarBadgeComparison();
         });
     }
 
@@ -93,8 +133,18 @@ function actualizarKPIs() {
 
     datosCompletos.forEach(cuarto => {
         const sensores = Object.values(cuarto.sensores || {});
-        const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
-        const sensorHum = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
+        
+        // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
+        const sensorTemp = sensores.find(s => {
+            const tipo = (s.tipo || '').toLowerCase();
+            return tipo === 'temperatura';
+        });
+        
+        // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
+        const sensorHum = sensores.find(s => {
+            const tipo = (s.tipo || '').toLowerCase();
+            return tipo === 'humedad';
+        });
 
         const tempVal = sensorTemp?.ultima?.valor;
         const humVal = sensorHum?.ultima?.valor;
@@ -124,8 +174,18 @@ function actualizarKPIs() {
 
 function determinarEstadoCuarto(cuarto) {
     const sensores = Object.values(cuarto.sensores || {});
-    const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
-    const sensorHum = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
+    
+    // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
+    const sensorTemp = sensores.find(s => {
+        const tipo = (s.tipo || '').toLowerCase();
+        return tipo === 'temperatura';
+    });
+    
+    // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
+    const sensorHum = sensores.find(s => {
+        const tipo = (s.tipo || '').toLowerCase();
+        return tipo === 'humedad';
+    });
 
     const tempVal = sensorTemp?.ultima?.valor;
     const humVal = sensorHum?.ultima?.valor;
@@ -156,8 +216,18 @@ function actualizarTablaSumario() {
 
     tbody.innerHTML = cuartosFiltrados.map(cuarto => {
         const sensores = Object.values(cuarto.sensores || {});
-        const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
-        const sensorHum = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
+        
+        // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
+        const sensorTemp = sensores.find(s => {
+            const tipo = (s.tipo || '').toLowerCase();
+            return tipo === 'temperatura';
+        });
+        
+        // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
+        const sensorHum = sensores.find(s => {
+            const tipo = (s.tipo || '').toLowerCase();
+            return tipo === 'humedad';
+        });
 
         const tempVal = sensorTemp?.ultima?.valor ?? null;
         const humVal = sensorHum?.ultima?.valor ?? null;
@@ -258,11 +328,20 @@ function inicializarComparisonMode() {
         btnComparison.classList.toggle('active');
         comparisonList.classList.toggle('active');
         
+        // Sincronizar con el otro botón
+        const btnComparison2 = document.getElementById('btnComparisonMode2');
+        if (btnComparison2) {
+            btnComparison2.classList.toggle('active');
+        }
+        
         if (!comparisonMode) {
             sensoresComparacion = [];
             document.querySelectorAll('.sensor-checkbox').forEach(cb => cb.checked = false);
             actualizarGrafico();
         }
+        
+        // Re-renderizar tarjetas para mostrar/ocultar checkboxes
+        renderizarCuartos();
         actualizarBadgeComparison();
     });
     
@@ -311,6 +390,22 @@ function renderizarListaComparacion() {
     `).join('');
 }
 
+// ====== Actualizar texto de métricas seleccionadas ======
+function actualizarTextoMetricas() {
+    const checkboxes = document.querySelectorAll('#listMetricas input[type="checkbox"]:checked');
+    const span = document.getElementById('metricasSeleccionadas');
+    if (!span) return;
+    
+    if (checkboxes.length === 0) {
+        span.textContent = 'Seleccionar métricas';
+    } else if (checkboxes.length === 1) {
+        const label = checkboxes[0].parentElement.textContent.trim();
+        span.textContent = label;
+    } else {
+        span.textContent = `${checkboxes.length} métricas seleccionadas`;
+    }
+}
+
 // ====== Gráfico Tiempo vs Datos ======
 function buildCuartoOptions() {
     const selCuarto = document.getElementById('selCuartoFiltro');
@@ -333,68 +428,44 @@ function buildCuartoOptions() {
 }
 
 function buildTipoOptions() {
-    const selTipo = document.getElementById('selTipoFiltro');
-    if (!selTipo) return;
-
-    const tiposSet = new Set();
-    datosCompletos.forEach(cuarto => {
-        Object.values(cuarto.sensores || {}).forEach(s => {
-            const t = (s.tipo || '').toLowerCase();
-            if (t) tiposSet.add(t);
-        });
-    });
-
-    const tipos = Array.from(tiposSet).sort();
-    selTipo.innerHTML = '';
-
-    const optAll = document.createElement('option');
-    optAll.value = '';
-    optAll.textContent = 'Todos los tipos';
-    selTipo.appendChild(optAll);
-
-    tipos.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = labelPorTipo(t);
-        selTipo.appendChild(opt);
-    });
+    // Ya no se usa este filtro, se removió del HTML
 }
 
 function repoblarSensoresDesdeFiltros(autorefresh = false) {
     const selSensor = document.getElementById('selSensor');
     const selCuarto = document.getElementById('selCuartoFiltro');
-    const selTipo   = document.getElementById('selTipoFiltro');
     if (!selSensor) return;
 
     const cuartoSel = selCuarto?.value || '';
-    const tipoSel   = (selTipo?.value || '').toLowerCase();
 
-    const opciones = [];
+    // Obtener sensores reales únicos (sin duplicados por campos)
+    const sensoresUnicos = new Map();
+    
     datosCompletos.forEach(cuarto => {
         if (cuartoSel && cuarto.codigo !== cuartoSel) return;
         const sensores = Object.values(cuarto.sensores || {});
         sensores.forEach(s => {
             if (!s || !s.codigo) return;
-            const t = (s.tipo || '').toLowerCase();
-            if (tipoSel && t !== tipoSel) return;
-            opciones.push({
-                codigo: s.codigo,
-                nombre: s.nombre || s.codigo,
-                tipo: t,
-                cuarto: cuarto.codigo,
-                cuartoNombre: cuarto.nombre
-            });
+            // Usar solo el código del sensor (sin el sufijo _campo)
+            const codigoReal = s.codigo.split('_')[0];
+            
+            if (!sensoresUnicos.has(codigoReal)) {
+                sensoresUnicos.set(codigoReal, {
+                    codigo: codigoReal,
+                    nombre: s.nombre.replace(/\s*\([^)]*\)\s*$/, ''), // Quitar el (Temperatura) o (Humedad) del nombre
+                    tipo: s.tipo,
+                    cuarto: cuarto.codigo,
+                    cuartoNombre: cuarto.nombre
+                });
+            }
         });
     });
 
-    const seen = new Set();
     selSensor.innerHTML = '';
-    opciones.forEach(o => {
-        if (seen.has(o.codigo)) return;
-        seen.add(o.codigo);
+    sensoresUnicos.forEach((sensor) => {
         const opt = document.createElement('option');
-        opt.value = o.codigo;
-        opt.textContent = `${o.nombre} (${o.tipo || 'sensor'}) · ${o.cuartoNombre}`;
+        opt.value = sensor.codigo;
+        opt.textContent = `${sensor.nombre} - ${sensor.cuartoNombre}`;
         selSensor.appendChild(opt);
     });
 
@@ -429,7 +500,6 @@ function inicializarUIChart() {
     }
 
     buildCuartoOptions();
-    buildTipoOptions();
     repoblarSensoresDesdeFiltros();
     inicializarComparisonMode();
 
@@ -437,9 +507,17 @@ function inicializarUIChart() {
     document.getElementById('selCuartoFiltro')?.addEventListener('change', () => {
         repoblarSensoresDesdeFiltros(true);
     });
-    document.getElementById('selTipoFiltro')?.addEventListener('change', () => {
-        repoblarSensoresDesdeFiltros(true);
+    
+    // Listener para checkboxes de métricas
+    document.querySelectorAll('#listMetricas input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            actualizarTextoMetricas();
+            actualizarGrafico();
+        });
     });
+    
+    // Actualizar texto de métricas seleccionadas
+    actualizarTextoMetricas();
 
     document.getElementById('btnActualizarGrafico')?.addEventListener('click', actualizarGrafico);
     document.getElementById('btnExportData')?.addEventListener('click', exportarDatos);
@@ -484,12 +562,19 @@ function setRange(desde, hasta) {
 }
 
 async function actualizarGrafico() {
-    const selMetrica = document.getElementById('selMetrica');
     const inpDesde = document.getElementById('inpDesde');
     const inpHasta = document.getElementById('inpHasta');
     const msg = document.getElementById('chartMensaje');
     
-    const metrica = selMetrica?.value || 'temperatura';
+    // Obtener métricas seleccionadas desde los checkboxes
+    const checkboxes = document.querySelectorAll('#listMetricas input[type="checkbox"]:checked');
+    const metricasSeleccionadas = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (metricasSeleccionadas.length === 0) {
+        msg.textContent = 'Seleccione al menos una métrica.';
+        return;
+    }
+    
     const desde = inpDesde?.value ? new Date(inpDesde.value) : null;
     const hasta = inpHasta?.value ? new Date(inpHasta.value) : null;
 
@@ -501,7 +586,7 @@ async function actualizarGrafico() {
     // Si estamos en modo comparación
     if (comparisonMode && sensoresComparacion.length > 0) {
         msg.textContent = 'Cargando datos de sensores…';
-        await cargarYRenderizarComparacion(sensoresComparacion, metrica, desde, hasta, fmt);
+        await cargarYRenderizarComparacion(sensoresComparacion, metricasSeleccionadas, desde, hasta, fmt);
     } else {
         // Modo simple - un sensor
         const selSensor = document.getElementById('selSensor');
@@ -530,15 +615,26 @@ async function actualizarGrafico() {
                 .sort((a,b) => new Date(a.fecha_captura) - new Date(b.fecha_captura));
 
             const labels = registros.map(r => new Date(r.fecha_captura));
-            const values = registros.map(r => {
-                const v = r[metrica];
-                if (v === null || v === undefined) return null;
-                const num = parseFloat(v);
-                return Number.isFinite(num) ? num : null;
+            
+            // Crear un dataset por cada métrica seleccionada
+            const datasetsInfo = metricasSeleccionadas.map(metrica => {
+                const values = registros.map(r => {
+                    const v = r[metrica];
+                    if (v === null || v === undefined) return null;
+                    const num = parseFloat(v);
+                    return Number.isFinite(num) ? num : null;
+                });
+                
+                return {
+                    labels,
+                    values,
+                    label: labelPorTipo(metrica),
+                    metrica
+                };
             });
 
-            renderChart([{ labels, values, label: labelPorTipo(metrica), metrica }], metrica);
-            calcularEstadisticas(values);
+            renderChart(datasetsInfo, metricasSeleccionadas[0]);
+            calcularEstadisticas(datasetsInfo[0].values, metricasSeleccionadas[0]);
             msg.textContent = registros.length ? '' : 'Sin datos en el rango seleccionado.';
         } catch (e) {
             console.error(e);
@@ -547,46 +643,48 @@ async function actualizarGrafico() {
     }
 }
 
-async function cargarYRenderizarComparacion(sensores, metrica, desde, hasta, fmt) {
+async function cargarYRenderizarComparacion(sensores, metricasSeleccionadas, desde, hasta, fmt) {
     const msg = document.getElementById('chartMensaje');
     
     try {
-        const promesas = sensores.map(async (sensor) => {
-            const params = new URLSearchParams();
-            params.set('codigo_sensor', sensor.codigo);
-            if (desde) params.set('desde', fmt(desde));
-            if (hasta) params.set('hasta', fmt(hasta));
+        const promesas = sensores.flatMap(sensor => {
+            return metricasSeleccionadas.map(async (metrica) => {
+                const params = new URLSearchParams();
+                params.set('codigo_sensor', sensor.codigo);
+                if (desde) params.set('desde', fmt(desde));
+                if (hasta) params.set('hasta', fmt(hasta));
 
-            const res = await fetch(`${API_REPORTE}?${params.toString()}`);
-            const data = await res.json();
+                const res = await fetch(`${API_REPORTE}?${params.toString()}`);
+                const data = await res.json();
 
-            if (Array.isArray(data)) {
-                const registros = data
-                    .filter(r => r && r.fecha_captura)
-                    .sort((a,b) => new Date(a.fecha_captura) - new Date(b.fecha_captura));
+                if (Array.isArray(data)) {
+                    const registros = data
+                        .filter(r => r && r.fecha_captura)
+                        .sort((a,b) => new Date(a.fecha_captura) - new Date(b.fecha_captura));
 
-                return {
-                    labels: registros.map(r => new Date(r.fecha_captura)),
-                    values: registros.map(r => {
-                        const v = r[metrica];
-                        if (v === null || v === undefined) return null;
-                        const num = parseFloat(v);
-                        return Number.isFinite(num) ? num : null;
-                    }),
-                    label: sensor.nombre,
-                    metrica,
-                    codigo: sensor.codigo
-                };
-            }
-            return null;
+                    return {
+                        labels: registros.map(r => new Date(r.fecha_captura)),
+                        values: registros.map(r => {
+                            const v = r[metrica];
+                            if (v === null || v === undefined) return null;
+                            const num = parseFloat(v);
+                            return Number.isFinite(num) ? num : null;
+                        }),
+                        label: `${sensor.nombre} - ${labelPorTipo(metrica)}`,
+                        metrica,
+                        codigo: sensor.codigo
+                    };
+                }
+                return null;
+            });
         });
 
         const datasetsInfo = (await Promise.all(promesas)).filter(d => d !== null);
-        renderChart(datasetsInfo, metrica);
+        renderChart(datasetsInfo, metricasSeleccionadas[0]);
         
         // Calcular stats del primero
         if (datasetsInfo.length > 0) {
-            calcularEstadisticas(datasetsInfo[0].values);
+            calcularEstadisticas(datasetsInfo[0].values, datasetsInfo[0].metrica);
         }
         
         msg.textContent = datasetsInfo.length > 0 ? '' : 'Sin datos en el rango seleccionado.';
@@ -624,7 +722,8 @@ function renderChart(datasetsInfo, metrica) {
     
     // Crear datasets con colores distintos
     const datasets = datasetsInfo.map((info, idx) => {
-        const colorBase = coloresGrafico[idx % coloresGrafico.length];
+        // Usar color específico según la métrica
+        const colorBase = obtenerColorPorTipo(info.metrica || metrica, idx);
         const bgColor = colorBase.replace('1)', '0.15)');
         
         return {
@@ -734,7 +833,7 @@ function actualizarLeyenda(datasetsInfo, colores) {
     }).join('');
 }
 
-function calcularEstadisticas(values) {
+function calcularEstadisticas(values, metrica = 'temperatura') {
     const validValues = values.filter(v => v !== null && v !== undefined && Number.isFinite(v));
     if (validValues.length === 0) {
         document.getElementById('statsContainer').innerHTML = '<div class="text-muted">No hay datos para mostrar estadísticas</div>';
@@ -745,13 +844,8 @@ function calcularEstadisticas(values) {
     const maxVal = Math.max(...validValues);
     const promVal = validValues.reduce((a, b) => a + b, 0) / validValues.length;
     
-    const metrica = document.getElementById('selMetrica')?.value || 'temperatura';
     const unidad = unidadPorTipo(metrica);
-    
-    let tipoClase = 'stat-box';
-    if (metrica === 'temperatura') tipoClase += ' temp';
-    else if (metrica === 'humedad') tipoClase += ' humidity';
-    else if (metrica === 'voltaje') tipoClase += ' voltage';
+    const tipoClase = `stat-box ${metrica}`;
 
     document.getElementById('statsContainer').innerHTML = `
         <div class="${tipoClase}">
@@ -878,13 +972,34 @@ function crearTarjetaCuarto(cuarto) {
     col.className = "col-lg-6 col-xl-4";
     
     const sensores = Object.values(cuarto.sensores);
-    const sensorTemp = sensores.find(s => (s.tipo || '').toLowerCase() === 'temperatura');
-    const sensorHum  = sensores.find(s => (s.tipo || '').toLowerCase() === 'humedad');
+    
+    // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
+    const sensorTemp = sensores.find(s => {
+        const tipo = (s.tipo || '').toLowerCase();
+        return tipo === 'temperatura';
+    });
+    
+    // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
+    const sensorHum = sensores.find(s => {
+        const tipo = (s.tipo || '').toLowerCase();
+        return tipo === 'humedad';
+    });
 
     const tempVal  = sensorTemp?.ultima?.valor ?? null;
     const tempProm = sensorTemp?.promedio?.prom_dia ?? null;
     const humVal   = sensorHum?.ultima?.valor ?? null;
     const humProm  = sensorHum?.promedio?.prom_dia ?? null;
+
+    // Checkboxes para modo comparación en indicadores principales
+    const checkboxTemp = (comparisonMode && sensorTemp) ? `
+        <input type="checkbox" class="sensor-checkbox me-2" value="${sensorTemp.codigo}" 
+               onchange="actualizarSensorComparacion(this, '${sensorTemp.codigo}', '${sensorTemp.nombre}')">
+    ` : '';
+    
+    const checkboxHum = (comparisonMode && sensorHum) ? `
+        <input type="checkbox" class="sensor-checkbox me-2" value="${sensorHum.codigo}" 
+               onchange="actualizarSensorComparacion(this, '${sensorHum.codigo}', '${sensorHum.nombre}')">
+    ` : '';
 
     const sensoresLista = sensores.filter(s => {
         const t = (s.tipo || '').toLowerCase();
@@ -902,14 +1017,20 @@ function crearTarjetaCuarto(cuarto) {
         <div class="cuarto-body">
             <div class="indicator-block">
                 <div class="indicator-item">
-                    <div class="indicator-label">Temperatura</div>
+                    <div class="indicator-label">
+                        ${checkboxTemp}
+                        Temperatura
+                    </div>
                     <div class="indicator-value">
                         ${tempVal !== null && tempVal !== undefined ? `${parseFloat(tempVal).toFixed(1)}°C` : 'Sin datos'}
                     </div>
                     <div class="indicator-promedio">Prom: ${tempProm !== null && tempProm !== undefined ? `${parseFloat(tempProm).toFixed(1)}°C` : '—'}</div>
                 </div>
                 <div class="indicator-item">
-                    <div class="indicator-label">Humedad</div>
+                    <div class="indicator-label">
+                        ${checkboxHum}
+                        Humedad
+                    </div>
                     <div class="indicator-value">
                         ${humVal !== null && humVal !== undefined ? `${parseFloat(humVal).toFixed(1)}%` : 'Sin datos'}
                     </div>

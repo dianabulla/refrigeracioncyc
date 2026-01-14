@@ -27,16 +27,14 @@ try {
     
     // Validar datos requeridos
     $codigo_sensor = $data['codigo_sensor'] ?? null;
-    $tipo_reporte = $data['tipo_reporte'] ?? null;
     
-    if (!$codigo_sensor || !$tipo_reporte) {
-      respond(['error' => 'codigo_sensor y tipo_reporte son requeridos'], 400);
+    if (!$codigo_sensor) {
+      respond(['error' => 'codigo_sensor es requerido'], 400);
     }
     
-    // Verificar que el sensor existe y pertenece a la empresa/finca del usuario
-    // (si el endpoint es usado por la web, si es IoT directo puede omitirse)
+    // Obtener información del sensor incluyendo su tipo
     $stmt = $pdo->prepare("
-        SELECT s.codigo, c.codigo_finca, f.codigo_empresa
+        SELECT s.codigo, s.codigo_cuarto, s.tipo, c.codigo_finca, f.codigo_empresa
         FROM sensor s
         INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
         INNER JOIN finca f ON c.codigo_finca = f.codigo
@@ -49,15 +47,21 @@ try {
       respond(['error' => 'Sensor no encontrado'], 404);
     }
     
+    // El tipo_reporte viene del sensor, no de lo que envía la ESP32
+    $tipo_reporte = $sensor['tipo'];
+    
     // Preparar datos del reporte (todos los campos de la tabla)
     $reporteData = [
-      'codigo' => uniqid('IOT_', true),  // Generar código único para el reporte
+      //'codigo' => uniqid('IOT_', true),  // Generar código único para el reporte
+      'codigo' => $data['codigo'] ?? null,  // Generar código único para el reporte
       'nombre' => $data['nombre'] ?? null,
       'tipo_reporte' => $tipo_reporte,
       'activo' => 1,
       'report_id' => $data['report_id'] ?? null,
-      'fecha_captura' => date('Y-m-d H:i:s'),
-      'fecha' => date('Y-m-d'),
+      //'fecha_captura' => date('Y-m-d H:i:s'),
+      //'fecha' => date('Y-m-d'),
+      'fecha_captura' => $data['fecha_captura'] ?? null,
+      'fecha' => $data['fecha'] ?? null,
       'voltaje' => isset($data['voltaje']) ? floatval($data['voltaje']) : null,
       'amperaje' => isset($data['amperaje']) ? floatval($data['amperaje']) : null,
       'aire' => isset($data['aire']) ? floatval($data['aire']) : null,
@@ -68,7 +72,7 @@ try {
       'temperatura' => isset($data['temperatura']) ? floatval($data['temperatura']) : null,
       'humedad' => isset($data['humedad']) ? floatval($data['humedad']) : null,
       'codigo_sensor' => $codigo_sensor,
-      'codigo_cuarto' => $data['codigo_cuarto'] ?? null
+      'codigo_cuarto' => $sensor['codigo_cuarto'] // Asignar desde la BD según el sensor
     ];
     
     // Insertar reporte

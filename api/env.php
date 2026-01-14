@@ -1,10 +1,6 @@
 <?php
 // config/env.php
 // Simple loader de .env: lee ../.env y setea getenv/$_ENV/$_SERVER
-
-// Establecer zona horaria a Bogotá, Colombia
-date_default_timezone_set('America/Bogota');
-
 $envPath = __DIR__ . '/../.env';
 if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);

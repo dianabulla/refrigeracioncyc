@@ -14,8 +14,8 @@ class Database {
         $host   = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? '127.0.0.1';
         $port   = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?? '3306';
         $dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?? 'refrigeracioncyc';
-        $user   = $_ENV['DB_USER'] ?? getenv('DB_USER') ?? 'root';
-        $pass   = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?? '';
+        $user   = $_ENV['DB_USER'] ?? getenv('DB_USER') ?? 'refrig_user';
+        $pass   = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?? '123456';
 
         $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
 
@@ -27,15 +27,6 @@ class Database {
 
         try {
             self::$pdo = new PDO($dsn, $user, $pass, $options);
-            
-            // Configurar zona horaria en MySQL para Bogotá (UTC-5)
-            try {
-                self::$pdo->exec("SET time_zone = '-05:00'");
-            } catch (PDOException $timeZoneError) {
-                // Si falla la configuración de zona horaria, continuar sin ella
-                error_log('Warning: Could not set timezone: ' . $timeZoneError->getMessage());
-            }
-            
             return self::$pdo;
         } catch (PDOException $e) {
             error_log('DB connection error: ' . $e->getMessage());

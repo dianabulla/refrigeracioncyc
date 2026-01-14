@@ -38,7 +38,20 @@ try {
         if (!$desde && !$hasta) {
             $hoy = date('Y-m-d');
             $desde = $hoy . ' 00:00:00';
-            $hasta = $hoy . ' 23:59:59';
+            $manana = date('Y-m-d', strtotime($hoy . ' +1 day'));
+            $hasta = $manana . ' 00:00:00';
+        } elseif ($hasta && strpos($hasta, ':') === false) {
+            // Si solo envían fecha sin hora, ajustar hasta el inicio del día siguiente
+            $hasta = date('Y-m-d', strtotime($hasta . ' +1 day')) . ' 00:00:00';
+        } elseif ($hasta && strpos($hasta, '23:59:59') !== false) {
+            // Si envían con 23:59:59, cambiar a inicio del día siguiente
+            $fechaBase = substr($hasta, 0, 10);
+            $hasta = date('Y-m-d', strtotime($fechaBase . ' +1 day')) . ' 00:00:00';
+        }
+
+        // Asegurar que desde tiene hora si no la tiene
+        if ($desde && strpos($desde, ':') === false) {
+            $desde = $desde . ' 00:00:00';
         }
 
         // Límite de seguridad para evitar respuestas enormes
@@ -97,7 +110,7 @@ try {
         }
 
         if ($hasta) {
-            $sql .= " AND r.fecha_captura <= ?";
+            $sql .= " AND r.fecha_captura < ?";
             $params[] = $hasta;
         }
 
@@ -113,6 +126,22 @@ try {
     if ($method === 'POST') {
         $d = json_decode(file_get_contents('php://input'), true);
         if (!is_array($d)) $d = $_POST;
+
+        // Obtener información del sensor: codigo_cuarto y tipo
+        $codigoSensor = $d['codigo_sensor'] ?? null;
+        $codigoCuarto = null;
+        $tipoReporte = null;
+        
+        if ($codigoSensor) {
+            // Buscar el codigo_cuarto y tipo desde el sensor
+            $stSensor = $pdo->prepare("SELECT codigo_cuarto, tipo FROM sensor WHERE codigo = ?");
+            $stSensor->execute([$codigoSensor]);
+            $sensorData = $stSensor->fetch(PDO::FETCH_ASSOC);
+            if ($sensorData) {
+                $codigoCuarto = $sensorData['codigo_cuarto'];
+                $tipoReporte = $sensorData['tipo'];  // Obtener el tipo desde el sensor
+            }
+        }
 
         $sql = "INSERT INTO reporte (
                     codigo, nombre, tipo_reporte,
@@ -135,7 +164,7 @@ try {
         $ok = $st->execute([
             ':codigo'        => trim($d['codigo'] ?? ''),
             ':nombre'        => $d['nombre'] ?? null,
-            ':tipo_reporte'  => $d['tipo_reporte'] ?? null,
+            ':tipo_reporte'  => $tipoReporte,  // Usar el tipo obtenido del sensor
             ':activo'        => isset($d['activo']) ? (int)$d['activo'] : 1,
             ':report_id'     => $d['report_id'] ?? null,
             ':fecha_captura' => $d['fecha_captura'] ?? null,
@@ -149,8 +178,8 @@ try {
             ':presion_e'     => $d['presion_e'] ?? null,
             ':temperatura'   => $d['temperatura'] ?? null,
             ':humedad'       => $d['humedad'] ?? null,
-            ':codigo_sensor' => $d['codigo_sensor'] ?? null,
-            ':codigo_cuarto' => $d['codigo_cuarto'] ?? null,
+            ':codigo_sensor' => $codigoSensor,
+            ':codigo_cuarto' => $codigoCuarto,
         ]);
 
         $ok ? respond(['ok' => true], 201)

@@ -600,17 +600,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // Cargar cuartos fríos
   cargarCuartosFrios();
 
-  // Configurar fechas por defecto (hoy) para filtrar de entrada y acelerar carga
+  // Configurar fechas por defecto (hoy) usando la zona horaria local
   const hoy = new Date();
-  const hoyStr = hoy.toISOString().slice(0, 10); // YYYY-MM-DD
+  // Ajustar a zona horaria de Bogotá (UTC-5) para obtener la fecha correcta
+  const hoyBogota = new Date(hoy.getTime() - (hoy.getTimezoneOffset() * 60000));
+  const hoyStr = hoyBogota.toISOString().slice(0, 10); // YYYY-MM-DD
 
   const inputDesde = document.getElementById("graficosDesde");
   const inputHasta = document.getElementById("graficosHasta");
   const filtroDesde = document.getElementById("filtro_desde");
   const filtroHasta = document.getElementById("filtro_hasta");
   
-  if (inputDesde && !inputDesde.value) inputDesde.valueAsDate = hoy;
-  if (inputHasta && !inputHasta.value) inputHasta.valueAsDate = hoy;
+  if (inputDesde && !inputDesde.value) inputDesde.value = hoyStr;
+  if (inputHasta && !inputHasta.value) inputHasta.value = hoyStr;
   if (filtroDesde && !filtroDesde.value) filtroDesde.value = hoyStr;
   if (filtroHasta && !filtroHasta.value) filtroHasta.value = hoyStr;
 
