@@ -83,7 +83,7 @@ class Sensor
 
         $permitidos = [
             'nombre','tipo','modelo','fecha_instalacion','fecha_verificacion',
-            'valor_actual','activo','codigo_cuarto'
+            'valor_actual','activo','codigo_cuarto','ubicacion'
         ];
 
         $set = [];
