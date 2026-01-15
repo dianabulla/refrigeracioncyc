@@ -12,10 +12,10 @@ function crearFilaSensor(item) {
 
   // Colores específicos para cada ubicación
   const coloresUbicacion = {
-    'exterior': 'bg-success',     // Verde
-    'interior': 'bg-warning',      // Naranja/Amarillo
-    'tuberia': 'bg-danger',        // Rojo
-    'otro': 'bg-secondary'         // Gris
+    'exterior': 'bg-info',        // Azul claro
+    'interior': 'bg-primary',     // Azul oscuro
+    'tuberia': 'bg-green-fresh',  // Verde pastel
+    'otro': 'bg-gray-light'       // Gris claro
   };
   
   const badgeColor = coloresUbicacion[item.ubicacion] || 'bg-info';

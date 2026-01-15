@@ -18,6 +18,17 @@ body {
   padding-top: 110px; /* espacio para topbar + navbar */
 }
 
+/* Colores personalizados para ubicaciones */
+.bg-green-fresh {
+  background-color: #81C784 !important; /* Verde pastel fresco */
+  color: #1a1a1a;
+}
+
+.bg-gray-light {
+  background-color: #E8E8E8 !important; /* Gris claro */
+  color: #1a1a1a;
+}
+
 /* =====================================================
    KPI CARDS - INDICADORES CLAVE
 ===================================================== */
