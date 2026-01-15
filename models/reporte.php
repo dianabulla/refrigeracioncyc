@@ -18,7 +18,8 @@ class Reporte
                         voltaje, amperaje, aire, otro, puerta,
                         presion_s, presion_e, temperatura, humedad,
                         codigo_sensor,
-                        codigo_cuarto
+                        codigo_cuarto,
+                        ubicacion
                     )
                     VALUES (
                         :codigo, :nombre, :tipo_reporte,
@@ -27,7 +28,8 @@ class Reporte
                         :voltaje, :amperaje, :aire, :otro, :puerta,
                         :presion_s, :presion_e, :temperatura, :humedad,
                         :codigo_sensor,
-                        :codigo_cuarto
+                        :codigo_cuarto,
+                        :ubicacion
                     )";
 
             $st = $this->pdo->prepare($sql);
@@ -49,7 +51,8 @@ class Reporte
                 ':temperatura'   => $d['temperatura'] ?? null,
                 ':humedad'       => $d['humedad'] ?? null,
                 ':codigo_sensor' => $d['codigo_sensor'] ?? null,
-                ':codigo_cuarto' => $d['codigo_cuarto'] ?? null
+                ':codigo_cuarto' => $d['codigo_cuarto'] ?? null,
+                ':ubicacion'     => $d['ubicacion'] ?? 'exterior'
             ]);
         } catch (PDOException $e) {
             error_log("Reporte crear: " . $e->getMessage());
