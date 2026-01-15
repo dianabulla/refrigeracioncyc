@@ -563,6 +563,8 @@ async function cargarReportes() {
       return;
     }
 
+    console.log('Reportes recibidos del API (primeros 3):', data.slice(0, 3).map(d => ({ codigo: d.codigo, fecha_captura: d.fecha_captura })));
+    
     data.forEach((item) => tbody.appendChild(crearFilaReporte(item)));
   } catch (e) {
     tbody.innerHTML = '<tr><td colspan="20" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar reportes</td></tr>';

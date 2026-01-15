@@ -55,9 +55,9 @@ try {
         }
 
         // Límite de seguridad para evitar respuestas enormes
-        $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 500;
-        if ($limit <= 0) $limit = 500;
-        if ($limit > 2000) $limit = 2000;
+        $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 1000;
+        if ($limit <= 0) $limit = 1000;
+        if ($limit > 5000) $limit = 5000;
 
         // Detalle por código
         if ($codigo) {

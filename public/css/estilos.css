@@ -1205,9 +1205,124 @@ table tbody td {
   display: block;
 }
 
+.ultima-lectura-fecha {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
 .cuarto-body {
   padding: 20px;
-  color: white;
+  color: #212529;
+  background: white;
+}
+
+/* Contenedor para mostrar secciones de ubicación horizontalmente */
+.ubicaciones-wrap {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+/* Móvil pequeño: 2 columnas */
+@media (max-width: 576px) {
+  .ubicaciones-wrap {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Móvil grande y tablet: 2 columnas */
+@media (min-width: 577px) and (max-width: 991px) {
+  .ubicaciones-wrap {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet grande y PC: 4 columnas siempre */
+@media (min-width: 992px) {
+  .ubicaciones-wrap {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Secciones por ubicación */
+.ubicacion-section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  /* Removido margin-bottom para que el grid funcione correctamente */
+}
+
+.ubicacion-header {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.ubicacion-header .badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: 100%;
+  display: inline-block;
+}
+
+.ubicacion-data {
+  color: #212529;
+}
+
+.ubicacion-row {
+  margin-bottom: 6px;
+}
+
+.ubicacion-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ubicacion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px dashed #e0e0e0;
+}
+
+.ubicacion-item:last-child {
+  border-bottom: none;
+}
+
+.ubicacion-metric {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.ubicacion-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1976D2;
+}
+
+/* Estilos para bg-success personalizado (tuberia) */
+.badge.bg-success {
+  background-color: #81C784 !important;
+  color: #1a1a1a;
+}
+
+/* Estilos para bg-secondary personalizado (otro) */
+.badge.bg-secondary {
+  background-color: #E8E8E8 !important;
+  color: #1a1a1a;
 }
 
 /* Indicadores de temperatura y humedad */
@@ -1327,22 +1442,28 @@ table tbody td {
   transition: max-height 0.4s ease, padding 0.4s ease;
   margin-top: 12px;
   padding-top: 0;
+  background: #f8f9fa;
+  border-radius: 8px;
 }
 
 .sensores-list.show {
   max-height: 2000px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 15px;
+  border-top: none;
 }
 
 /* Items de sensores */
 .sensor-item {
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 10px;
 }
 
 .sensor-item:last-child {
   border-bottom: none;
+  margin-bottom: 0;
 }
 
 .sensor-nombre {
@@ -1352,7 +1473,7 @@ table tbody td {
   margin-bottom: 10px;
   font-weight: 700;
   font-size: 1.05rem;
-  color: white;
+  color: #1976D2;
 }
 
 .sensor-checkbox {
@@ -1373,8 +1494,8 @@ table tbody td {
 }
 
 .sensor-dato-label {
-  font-size: 0.8rem;
-  color: #E3F2FD;
+  font-size: 0.75rem;
+  color: #666;
   margin-bottom: 4px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1383,22 +1504,26 @@ table tbody td {
 }
 
 .sensor-dato-valor {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  color: white;
+  color: #212529;
   display: block;
 }
 
 .sensor-dato-unidad {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.85rem;
+  color: #666;
   font-weight: 500;
 }
 
 .sensor-fecha {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #666;
   font-weight: 500;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Filtros de cuartos */

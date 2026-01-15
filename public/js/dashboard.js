@@ -111,6 +111,7 @@ async function cargarDatos() {
         cuartosFiltrados = [...datosCompletos];
         
         console.log('Datos del dashboard:', datosCompletos);
+        console.log('Primer cuarto ubicaciones:', datosCompletos[0]?.ubicaciones);
         
         actualizarKPIs();
         actualizarTablaSumario();
@@ -132,31 +133,20 @@ function actualizarKPIs() {
     let cuartosNormales = 0, cuartosAlerta = 0;
 
     datosCompletos.forEach(cuarto => {
-        const sensores = Object.values(cuarto.sensores || {});
-        
-        // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
-        const sensorTemp = sensores.find(s => {
-            const tipo = (s.tipo || '').toLowerCase();
-            return tipo === 'temperatura';
-        });
-        
-        // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
-        const sensorHum = sensores.find(s => {
-            const tipo = (s.tipo || '').toLowerCase();
-            return tipo === 'humedad';
-        });
+        const ubicaciones = cuarto.ubicaciones || {};
 
-        const tempVal = sensorTemp?.ultima?.valor;
-        const humVal = sensorHum?.ultima?.valor;
-
-        if (tempVal !== null && tempVal !== undefined) {
-            tempSum += parseFloat(tempVal);
-            tempCount++;
-        }
-        if (humVal !== null && humVal !== undefined) {
-            humSum += parseFloat(humVal);
-            humCount++;
-        }
+        Object.values(ubicaciones).forEach(u => {
+            const t = u.temperatura_actual;
+            const h = u.humedad_actual;
+            if (t !== null && t !== undefined) {
+                tempSum += parseFloat(t);
+                tempCount++;
+            }
+            if (h !== null && h !== undefined) {
+                humSum += parseFloat(h);
+                humCount++;
+            }
+        });
 
         const estado = determinarEstadoCuarto(cuarto);
         if (estado === 'normal') cuartosNormales++;
@@ -173,36 +163,27 @@ function actualizarKPIs() {
 }
 
 function determinarEstadoCuarto(cuarto) {
-    const sensores = Object.values(cuarto.sensores || {});
-    
-    // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
-    const sensorTemp = sensores.find(s => {
-        const tipo = (s.tipo || '').toLowerCase();
-        return tipo === 'temperatura';
-    });
-    
-    // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
-    const sensorHum = sensores.find(s => {
-        const tipo = (s.tipo || '').toLowerCase();
-        return tipo === 'humedad';
-    });
+    const ubicaciones = cuarto.ubicaciones || {};
+    let estado = 'normal';
 
-    const tempVal = sensorTemp?.ultima?.valor;
-    const humVal = sensorHum?.ultima?.valor;
+    for (const u of Object.values(ubicaciones)) {
+        const t = u.temperatura_actual;
+        const h = u.humedad_actual;
 
-    if (tempVal !== null && tempVal !== undefined) {
-        const temp = parseFloat(tempVal);
-        if (temp < rangosTemperatura.min - 2 || temp > rangosTemperatura.max + 2) return 'critico';
-        if (temp < rangosTemperatura.min || temp > rangosTemperatura.max) return 'alerta';
+        if (t !== null && t !== undefined) {
+            const temp = parseFloat(t);
+            if (temp < rangosTemperatura.min - 2 || temp > rangosTemperatura.max + 2) return 'critico';
+            if (temp < rangosTemperatura.min || temp > rangosTemperatura.max) estado = 'alerta';
+        }
+
+        if (h !== null && h !== undefined) {
+            const hum = parseFloat(h);
+            if (hum < rangosHumedad.min - 5 || hum > rangosHumedad.max + 5) return 'critico';
+            if (hum < rangosHumedad.min || hum > rangosHumedad.max) estado = 'alerta';
+        }
     }
 
-    if (humVal !== null && humVal !== undefined) {
-        const hum = parseFloat(humVal);
-        if (hum < rangosHumedad.min - 5 || hum > rangosHumedad.max + 5) return 'critico';
-        if (hum < rangosHumedad.min || hum > rangosHumedad.max) return 'alerta';
-    }
-
-    return 'normal';
+    return estado;
 }
 
 function actualizarTablaSumario() {
@@ -215,22 +196,34 @@ function actualizarTablaSumario() {
     }
 
     tbody.innerHTML = cuartosFiltrados.map(cuarto => {
-        const sensores = Object.values(cuarto.sensores || {});
+        const ubic = cuarto.ubicaciones || {};
         
-        // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
-        const sensorTemp = sensores.find(s => {
-            const tipo = (s.tipo || '').toLowerCase();
-            return tipo === 'temperatura';
-        });
+        // Buscar temperatura y humedad INDEPENDIENTEMENTE
+        let tempVal = null; let humVal = null;
+        const orden = ['interior', 'exterior', 'tuberia', 'otro'];
         
-        // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
-        const sensorHum = sensores.find(s => {
-            const tipo = (s.tipo || '').toLowerCase();
-            return tipo === 'humedad';
-        });
+        // Buscar temperatura
+        for (const ubi of orden) {
+            if (ubic[ubi]) {
+                const t = ubic[ubi].temperatura_actual;
+                if (t !== null && t !== undefined) {
+                    tempVal = t;
+                    break;
+                }
+            }
+        }
+        
+        // Buscar humedad
+        for (const ubi of orden) {
+            if (ubic[ubi]) {
+                const h = ubic[ubi].humedad_actual;
+                if (h !== null && h !== undefined) {
+                    humVal = h;
+                    break;
+                }
+            }
+        }
 
-        const tempVal = sensorTemp?.ultima?.valor ?? null;
-        const humVal = sensorHum?.ultima?.valor ?? null;
         const estado = determinarEstadoCuarto(cuarto);
 
         const estadoHtml = {
@@ -242,8 +235,8 @@ function actualizarTablaSumario() {
         return `
             <tr class="cuarto-row" data-codigo="${cuarto.codigo}">
                 <td><strong>${cuarto.nombre}</strong><br><small class="text-muted">${cuarto.codigo}</small></td>
-                <td>${tempVal !== null ? `<strong>${parseFloat(tempVal).toFixed(1)}°C</strong>` : '—'}</td>
-                <td>${humVal !== null ? `<strong>${parseFloat(humVal).toFixed(1)}%</strong>` : '—'}</td>
+                <td>${tempVal !== null && tempVal !== undefined ? `<strong>${parseFloat(tempVal).toFixed(1)}°C</strong>` : '—'}</td>
+                <td>${humVal !== null && humVal !== undefined ? `<strong>${parseFloat(humVal).toFixed(1)}%</strong>` : '—'}</td>
                 <td>${estadoHtml}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary" onclick="scrollToCuarto('${cuarto.codigo}')">
@@ -431,58 +424,122 @@ function buildTipoOptions() {
     // Ya no se usa este filtro, se removió del HTML
 }
 
-function repoblarSensoresDesdeFiltros(autorefresh = false) {
+async function repoblarSensoresDesdeFiltros(autorefresh = false) {
     const selSensor = document.getElementById('selSensor');
     const selCuarto = document.getElementById('selCuartoFiltro');
     if (!selSensor) return;
 
     const cuartoSel = selCuarto?.value || '';
 
-    // Obtener sensores reales únicos (sin duplicados por campos)
-    const sensoresUnicos = new Map();
-    
-    datosCompletos.forEach(cuarto => {
-        if (cuartoSel && cuarto.codigo !== cuartoSel) return;
-        const sensores = Object.values(cuarto.sensores || {});
-        sensores.forEach(s => {
+    // Construir lookup de nombre de cuarto
+    const nombreCuartoPorCodigo = new Map(datosCompletos.map(c => [c.codigo, c.nombre]));
+
+    try {
+        const params = new URLSearchParams();
+        if (cuartoSel) params.set('codigo_cuarto', cuartoSel);
+        const res = await fetch(`../api/sensor.php${params.toString() ? '?' + params.toString() : ''}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const sensores = await res.json();
+
+        // Mapear por código y mostrar una sola vez por sensor (para temperatura_humedad no se duplica)
+        const mapa = new Map();
+        (sensores || []).forEach(s => {
             if (!s || !s.codigo) return;
-            // Usar solo el código del sensor (sin el sufijo _campo)
-            const codigoReal = s.codigo.split('_')[0];
-            
-            if (!sensoresUnicos.has(codigoReal)) {
-                sensoresUnicos.set(codigoReal, {
-                    codigo: codigoReal,
-                    nombre: s.nombre.replace(/\s*\([^)]*\)\s*$/, ''), // Quitar el (Temperatura) o (Humedad) del nombre
-                    tipo: s.tipo,
-                    cuarto: cuarto.codigo,
-                    cuartoNombre: cuarto.nombre
+            if (!mapa.has(s.codigo)) {
+                mapa.set(s.codigo, {
+                    codigo: s.codigo,
+                    nombre: s.nombre,
+                    tipo: (s.tipo || '').toLowerCase(),
+                    cuarto: s.codigo_cuarto,
+                    cuartoNombre: nombreCuartoPorCodigo.get(s.codigo_cuarto) || s.codigo_cuarto
                 });
             }
         });
-    });
 
-    selSensor.innerHTML = '';
-    sensoresUnicos.forEach((sensor) => {
-        const opt = document.createElement('option');
-        opt.value = sensor.codigo;
-        opt.textContent = `${sensor.nombre} - ${sensor.cuartoNombre}`;
-        selSensor.appendChild(opt);
-    });
+        selSensor.innerHTML = '';
+        
+        // Agregar opción "Todos los sensores" solo si no hay filtro de cuarto
+        if (!cuartoSel && mapa.size > 1) {
+            const optTodos = document.createElement('option');
+            optTodos.value = 'TODOS';
+            optTodos.textContent = '📊 Todos los sensores';
+            selSensor.appendChild(optTodos);
+        }
+        
+        mapa.forEach(sensor => {
+            const opt = document.createElement('option');
+            opt.value = sensor.codigo;
+            opt.textContent = `${sensor.nombre} - ${sensor.cuartoNombre}`;
+            selSensor.appendChild(opt);
+        });
 
-    if (selSensor.options.length > 0) {
-        selSensor.selectedIndex = 0;
-        if (autorefresh) actualizarGrafico();
-    } else {
-        const msg = document.getElementById('chartMensaje');
-        if (msg) msg.textContent = 'No hay sensores que coincidan con los filtros.';
-        if (timeSeriesChart) {
-            timeSeriesChart.destroy();
-            timeSeriesChart = null;
+        if (selSensor.options.length > 0) {
+            selSensor.selectedIndex = 0;
+            // Auto-cargar gráfico al iniciar o cambiar filtro
+            if (autorefresh) {
+                actualizarGrafico();
+            }
+        } else {
+            const msg = document.getElementById('chartMensaje');
+            if (msg) msg.textContent = 'No hay sensores que coincidan con los filtros.';
+            if (timeSeriesChart) {
+                timeSeriesChart.destroy();
+                timeSeriesChart = null;
+            }
+        }
+    } catch (e) {
+        // Fallback: construir desde respuesta del dashboard (ubicaciones.sensores_th)
+        const selSensor = document.getElementById('selSensor');
+        selSensor.innerHTML = '';
+
+        const mapa = new Map();
+        datosCompletos.forEach(cuarto => {
+            if (cuartoSel && cuarto.codigo !== cuartoSel) return;
+            const ubicaciones = cuarto.ubicaciones || {};
+            Object.values(ubicaciones).forEach(u => {
+                (u.sensores_th || []).forEach(s => {
+                    if (!mapa.has(s.codigo)) {
+                        mapa.set(s.codigo, {
+                            codigo: s.codigo,
+                            nombre: s.nombre,
+                            cuarto: cuarto.codigo,
+                            cuartoNombre: cuarto.nombre
+                        });
+                    }
+                });
+            });
+        });
+
+        // Agregar opción "Todos los sensores" en el fallback también
+        if (!cuartoSel && mapa.size > 1) {
+            const optTodos = document.createElement('option');
+            optTodos.value = 'TODOS';
+            optTodos.textContent = '📊 Todos los sensores';
+            selSensor.appendChild(optTodos);
+        }
+        
+        mapa.forEach(sensor => {
+            const opt = document.createElement('option');
+            opt.value = sensor.codigo;
+            opt.textContent = `${sensor.nombre} - ${sensor.cuartoNombre}`;
+            selSensor.appendChild(opt);
+        });
+
+        if (selSensor.options.length > 0) {
+            selSensor.selectedIndex = 0;
+            if (autorefresh) actualizarGrafico();
+        } else {
+            const msg = document.getElementById('chartMensaje');
+            if (msg) msg.textContent = 'No se encontraron sensores para graficar.';
+            if (timeSeriesChart) {
+                timeSeriesChart.destroy();
+                timeSeriesChart = null;
+            }
         }
     }
 }
 
-function inicializarUIChart() {
+async function inicializarUIChart() {
     // Rango por defecto: día actual
     const ahora = new Date();
     const inicioDia = new Date();
@@ -500,7 +557,7 @@ function inicializarUIChart() {
     }
 
     buildCuartoOptions();
-    repoblarSensoresDesdeFiltros();
+    await repoblarSensoresDesdeFiltros(); // Esperar a que se carguen los sensores
     inicializarComparisonMode();
 
     // Listeners
@@ -530,9 +587,12 @@ function inicializarUIChart() {
     document.getElementById('btnRange7d')?.addEventListener('click', () => setRangeDays(7));
     document.getElementById('btnRange30d')?.addEventListener('click', () => setRangeDays(30));
 
-    if (document.getElementById('selSensor')?.value) {
-        actualizarGrafico();
-    }
+    // Auto-cargar gráfico al iniciar con el primer sensor disponible
+    setTimeout(() => {
+        if (document.getElementById('selSensor')?.value) {
+            actualizarGrafico();
+        }
+    }, 100); // Pequeño delay para asegurar que todo esté listo
 }
 
 function setRangeHours(hours) {
@@ -588,10 +648,33 @@ async function actualizarGrafico() {
         msg.textContent = 'Cargando datos de sensores…';
         await cargarYRenderizarComparacion(sensoresComparacion, metricasSeleccionadas, desde, hasta, fmt);
     } else {
-        // Modo simple - un sensor
+        // Modo simple - un sensor o todos
         const selSensor = document.getElementById('selSensor');
         if (!selSensor?.value) {
             msg.textContent = 'Seleccione un sensor para visualizar.';
+            return;
+        }
+        
+        // Si seleccionó "TODOS", cargar todos los sensores del dropdown
+        if (selSensor.value === 'TODOS') {
+            const todosLosSensores = [];
+            for (let i = 1; i < selSensor.options.length; i++) {
+                const opt = selSensor.options[i];
+                if (opt.value !== 'TODOS') {
+                    todosLosSensores.push({
+                        codigo: opt.value,
+                        nombre: opt.textContent
+                    });
+                }
+            }
+            
+            if (todosLosSensores.length === 0) {
+                msg.textContent = 'No hay sensores disponibles.';
+                return;
+            }
+            
+            msg.textContent = 'Cargando datos de todos los sensores…';
+            await cargarYRenderizarComparacion(todosLosSensores, metricasSeleccionadas, desde, hasta, fmt);
             return;
         }
 
@@ -971,40 +1054,84 @@ function crearTarjetaCuarto(cuarto) {
     const col = document.createElement("div");
     col.className = "col-lg-6 col-xl-4";
     
-    const sensores = Object.values(cuarto.sensores);
+    const ubicaciones = cuarto.ubicaciones || {};
+    const ultimaLectura = cuarto.ultima_lectura;
     
-    // Buscar temperatura: el API ya separó temperatura_humedad en entradas individuales
-    const sensorTemp = sensores.find(s => {
-        const tipo = (s.tipo || '').toLowerCase();
-        return tipo === 'temperatura';
-    });
+    // Formatear fecha y hora
+    const fechaHoraTexto = ultimaLectura ? formatearFechaHora(ultimaLectura) : 'Sin datos';
     
-    // Buscar humedad: el API ya separó temperatura_humedad en entradas individuales
-    const sensorHum = sensores.find(s => {
-        const tipo = (s.tipo || '').toLowerCase();
-        return tipo === 'humedad';
-    });
-
-    const tempVal  = sensorTemp?.ultima?.valor ?? null;
-    const tempProm = sensorTemp?.promedio?.prom_dia ?? null;
-    const humVal   = sensorHum?.ultima?.valor ?? null;
-    const humProm  = sensorHum?.promedio?.prom_dia ?? null;
-
-    // Checkboxes para modo comparación en indicadores principales
-    const checkboxTemp = (comparisonMode && sensorTemp) ? `
-        <input type="checkbox" class="sensor-checkbox me-2" value="${sensorTemp.codigo}" 
-               onchange="actualizarSensorComparacion(this, '${sensorTemp.codigo}', '${sensorTemp.nombre}')">
-    ` : '';
+    // Generar secciones por ubicación
+    let seccionesHTML = '';
     
-    const checkboxHum = (comparisonMode && sensorHum) ? `
-        <input type="checkbox" class="sensor-checkbox me-2" value="${sensorHum.codigo}" 
-               onchange="actualizarSensorComparacion(this, '${sensorHum.codigo}', '${sensorHum.nombre}')">
-    ` : '';
-
-    const sensoresLista = sensores.filter(s => {
-        const t = (s.tipo || '').toLowerCase();
-        return t !== 'temperatura' && t !== 'humedad';
-    });
+    const coloresUbicacion = {
+        'exterior': 'bg-info',
+        'interior': 'bg-primary',
+        'tuberia': 'bg-success',
+        'otro': 'bg-secondary'
+    };
+    
+    const nombresUbicacion = {
+        'exterior': 'EXTERIOR',
+        'interior': 'INTERIOR',
+        'tuberia': 'TUBERÍA',
+        'otro': 'OTRO'
+    };
+    
+    for (const [ubicacion, datos] of Object.entries(ubicaciones)) {
+        const tempActual = datos.temperatura_actual;
+        const tempPromedio = datos.temperatura_promedio;
+        const humActual = datos.humedad_actual;
+        const humPromedio = datos.humedad_promedio;
+        
+        // Solo mostrar si hay datos
+        if (tempActual !== null || humActual !== null) {
+            const colorBadge = coloresUbicacion[ubicacion] || 'bg-secondary';
+            
+            seccionesHTML += `
+                <div class="ubicacion-section">
+                    <div class="ubicacion-header">
+                        <span class="badge ${colorBadge}">${nombresUbicacion[ubicacion]}</span>
+                    </div>
+                    <div class="ubicacion-data">
+                        <div class="ubicacion-row">
+                            <div class="ubicacion-label"><strong>Lectura Actual:</strong></div>
+                        </div>
+                        <div class="ubicacion-row">
+                            <div class="ubicacion-item">
+                                <span class="ubicacion-metric">Temperatura:</span>
+                                <span class="ubicacion-value">${tempActual !== null ? parseFloat(tempActual).toFixed(1) + '°C' : 'N/A'}</span>
+                            </div>
+                            <div class="ubicacion-item">
+                                <span class="ubicacion-metric">Humedad:</span>
+                                <span class="ubicacion-value">${humActual !== null ? parseFloat(humActual).toFixed(1) + '%' : 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="ubicacion-row mt-2">
+                            <div class="ubicacion-label"><strong>Promedio Histórico:</strong></div>
+                        </div>
+                        <div class="ubicacion-row">
+                            <div class="ubicacion-item">
+                                <span class="ubicacion-metric">Temperatura:</span>
+                                <span class="ubicacion-value">${tempPromedio !== null ? parseFloat(tempPromedio).toFixed(1) + '°C' : 'N/A'}</span>
+                            </div>
+                            <div class="ubicacion-item">
+                                <span class="ubicacion-metric">Humedad:</span>
+                                <span class="ubicacion-value">${humPromedio !== null ? parseFloat(humPromedio).toFixed(1) + '%' : 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Obtener todos los "otros sensores" de todas las ubicaciones
+    let otrosSensores = [];
+    for (const [ubicacion, datos] of Object.entries(ubicaciones)) {
+        if (datos.otros_sensores && datos.otros_sensores.length > 0) {
+            otrosSensores = [...otrosSensores, ...datos.otros_sensores];
+        }
+    }
     
     const card = document.createElement("div");
     card.className = "card cuarto-card";
@@ -1012,39 +1139,22 @@ function crearTarjetaCuarto(cuarto) {
         <div class="cuarto-header">
             <h5><i class="bi bi-snow2 me-2"></i>${cuarto.nombre}</h5>
             <small class="text-white-50">${cuarto.codigo_finca}</small>
+            <div class="ultima-lectura-fecha">
+                <i class="bi bi-clock me-1"></i>${fechaHoraTexto}
+            </div>
         </div>
         
         <div class="cuarto-body">
-            <div class="indicator-block">
-                <div class="indicator-item">
-                    <div class="indicator-label">
-                        ${checkboxTemp}
-                        Temperatura
-                    </div>
-                    <div class="indicator-value">
-                        ${tempVal !== null && tempVal !== undefined ? `${parseFloat(tempVal).toFixed(1)}°C` : 'Sin datos'}
-                    </div>
-                    <div class="indicator-promedio">Prom: ${tempProm !== null && tempProm !== undefined ? `${parseFloat(tempProm).toFixed(1)}°C` : '—'}</div>
-                </div>
-                <div class="indicator-item">
-                    <div class="indicator-label">
-                        ${checkboxHum}
-                        Humedad
-                    </div>
-                    <div class="indicator-value">
-                        ${humVal !== null && humVal !== undefined ? `${parseFloat(humVal).toFixed(1)}%` : 'Sin datos'}
-                    </div>
-                    <div class="indicator-promedio">Prom: ${humProm !== null && humProm !== undefined ? `${parseFloat(humProm).toFixed(1)}%` : '—'}</div>
-                </div>
-            </div>
-            ${sensoresLista.length > 0 ? `
+            <div class="ubicaciones-wrap">${seccionesHTML}</div>
+            
+            ${otrosSensores.length > 0 ? `
             <button class="toggle-sensors collapsed" onclick="toggleSensores(this, '${cuarto.codigo}')">
                 <i class="bi bi-chevron-right"></i>
-                <span>Ver otros sensores (${sensoresLista.length})</span>
+                <span>Ver otros sensores (${otrosSensores.length})</span>
             </button>
             
             <div class="sensores-list" id="sensores_${cuarto.codigo}">
-                ${generarSensoresList(sensoresLista)}
+                ${generarOtrosSensoresList(otrosSensores)}
             </div>
             ` : ''}
         </div>
@@ -1054,24 +1164,19 @@ function crearTarjetaCuarto(cuarto) {
     return col;
 }
 
-function generarSensoresList(sensores) {
+function generarOtrosSensoresList(sensores) {
     if (sensores.length === 0) {
-        return '<p class="text-muted">No hay sensores registrados</p>';
+        return '<p class="text-muted">No hay otros sensores</p>';
     }
 
     let html = '';
 
     sensores.forEach(sensor => {
         const tipo = sensor.tipo || '';
-        const ultima = sensor.ultima || {};
-        const promedio = sensor.promedio || {};
+        const valor = sensor.valor_actual;
+        const prom = sensor.promedio;
 
-        const valor = ultima.valor;
-        const prom = promedio.prom_dia;
-        const fechaCaptura = ultima.fecha_captura || '';
-
-        const icono = tipo === 'temperatura' ? 'bi-thermometer-half'
-                      : tipo === 'voltaje' ? 'bi-lightning'
+        const icono = tipo === 'voltaje' ? 'bi-lightning'
                       : tipo === 'amperaje' ? 'bi-speedometer2'
                       : 'bi-activity';
 
@@ -1086,22 +1191,15 @@ function generarSensoresList(sensores) {
             </div>
         `;
 
-        const checkboxHtml = comparisonMode ? `
-            <input type="checkbox" class="sensor-checkbox" value="${sensor.codigo}" 
-                   onchange="actualizarSensorComparacion(this, '${sensor.codigo}', '${sensor.nombre}')">
-        ` : '';
-
         html += `
             <div class="sensor-item">
                 <div class="sensor-nombre">
-                    ${checkboxHtml}
                     <i class="bi ${icono}"></i>
                     ${sensor.nombre}
                 </div>
                 <div class="sensor-datos">
                     ${datosHtml}
                 </div>
-                <div class="sensor-fecha">Última: ${formatearFecha(fechaCaptura)}</div>
             </div>
         `;
     });
@@ -1109,13 +1207,18 @@ function generarSensoresList(sensores) {
     return html;
 }
 
-function actualizarSensorComparacion(checkbox, codigo, nombre) {
-    if (checkbox.checked) {
-        agregarSensorComparacion(codigo, nombre);
-    } else {
-        removerSensorComparacion(codigo);
-    }
-    actualizarGrafico();
+function formatearFechaHora(fecha) {
+    if (!fecha) return "Sin datos";
+    const d = new Date(fecha);
+    
+    return d.toLocaleString('es-ES', { 
+        year: 'numeric',
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+    });
 }
 
 function toggleSensores(button, codigoCuarto) {

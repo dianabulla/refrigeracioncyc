@@ -49,88 +49,178 @@ try {
     foreach ($cuartos as $cuarto) {
         $codCuarto = $cuarto['codigo'];
         
-        // Obtener sensores del cuarto
-        $sqlSensores = "SELECT * FROM sensor WHERE codigo_cuarto = ? ORDER BY nombre";
+        // Obtener sensores del cuarto con su ubicación
+        $sqlSensores = "SELECT codigo, nombre, tipo, ubicacion FROM sensor WHERE codigo_cuarto = ? ORDER BY nombre";
         $stSensores = $pdo->prepare($sqlSensores);
         $stSensores->execute([$codCuarto]);
         $sensores = $stSensores->fetchAll(PDO::FETCH_ASSOC);
         
-        $datosUltimas = [];
-        $datosPromedios = [];
+        // Agrupar por ubicación
+        $datosPorUbicacion = [
+            'exterior' => ['temperatura' => [], 'humedad' => [], 'otros' => []],
+            'interior' => ['temperatura' => [], 'humedad' => [], 'otros' => []],
+            'tuberia' => ['temperatura' => [], 'humedad' => [], 'otros' => []],
+            'otro' => ['temperatura' => [], 'humedad' => [], 'otros' => []]
+        ];
+        
+        $ultimaFechaLectura = null;
         
         foreach ($sensores as $sensor) {
             $codSensor = $sensor['codigo'];
             $tipoSensor = strtolower(trim($sensor['tipo'] ?? ''));
-
-            // Mapear tipo de sensor al campo de valor en reporte
-            $campoPorTipo = [
+            $ubicacion = $sensor['ubicacion'] ?? 'exterior';
+            
+            error_log("Dashboard - Procesando sensor: {$codSensor}, tipo: {$tipoSensor}, ubicacion: {$ubicacion}");
+            
+            // Mapear tipos de sensores a nombres de columnas en la tabla reporte
+            $mapeoColumnas = [
                 'temperatura' => 'temperatura',
-                'humedad'     => 'humedad',
-                'voltaje'     => 'voltaje',
-                'amperaje'    => 'amperaje',
-                'presion_s'   => 'presion_s',
-                'presion_e'   => 'presion_e',
-                'aire'        => 'aire',
-                'otro'        => 'otro',
-                'puerta'      => 'puerta',
-                'temperatura_humedad' => ['temperatura', 'humedad'],  // Sensor que mide ambos
+                'humedad' => 'humedad',
+                'voltaje' => 'voltaje',
+                'amperaje' => 'amperaje',
+                'presión' => 'presion_s',
+                'presion.s' => 'presion_s',
+                'presion.e' => 'presion_e',
+                'pueta' => 'puerta',  // Corrección de typo
+                'puerta' => 'puerta',
+                'aire' => 'aire',
+                'otro' => 'otro'
             ];
-
-            if (!isset($campoPorTipo[$tipoSensor])) {
-                // Si el tipo no es reconocido, saltar este sensor
+            
+            // Determinar qué campos leer según el tipo de sensor
+            $campos = [];
+            $tipoLower = strtolower($tipoSensor);
+            
+            if ($tipoLower === 'temperatura') {
+                $campos = ['temperatura'];
+            } elseif ($tipoLower === 'humedad') {
+                $campos = ['humedad'];
+            } elseif (in_array($tipoLower, ['temperatura_humedad', 'temperaturah_humedad'])) {
+                $campos = ['temperatura', 'humedad'];
+                error_log("Dashboard - Sensor {$codSensor} tipo TH detectado, campos: temperatura, humedad");
+            } else {
+                // Otros tipos de sensores - mapear al nombre de columna correcto
+                $columna = $mapeoColumnas[$tipoLower] ?? null;
+                if ($columna) {
+                    $campos = [$columna];
+                }
+            }
+            
+            // Si no se encontró mapeo válido, saltar este sensor
+            if (empty($campos)) {
+                error_log("Dashboard - ADVERTENCIA: Sensor {$codSensor} tipo '{$tipoSensor}' no tiene campos válidos");
                 continue;
             }
-
-            $campos = $campoPorTipo[$tipoSensor];
-            // Si es un array, el sensor mide múltiples cosas
-            $esMultiple = is_array($campos);
-            $camposArray = $esMultiple ? $campos : [$campos];
-
-            // Procesar cada campo del sensor
-            foreach ($camposArray as $campo) {
-                // Para sensores múltiples, buscar por el tipo_sensor completo
-                // Para sensores simples, buscar por el campo (que es el tipo)
-                $tipoReporteBusqueda = $esMultiple ? $tipoSensor : $campo;
-
-                // Última lectura del tipo específico
+            
+            foreach ($campos as $campo) {
+                // Lectura actual (última lectura)
                 $sqlUltima = "SELECT $campo AS valor, fecha_captura
                               FROM reporte 
-                              WHERE codigo_sensor = ? AND tipo_reporte = ?
+                              WHERE codigo_sensor = ? AND $campo IS NOT NULL
                               ORDER BY fecha_captura DESC 
                               LIMIT 1";
                 $stUltima = $pdo->prepare($sqlUltima);
-                $stUltima->execute([$codSensor, $tipoReporteBusqueda]);
-                $ultimaRow = $stUltima->fetch(PDO::FETCH_ASSOC) ?: ['valor' => null, 'fecha_captura' => null];
-
-                // Promedio de los últimos 100 registros disponibles
-                $sqlPromedioDia = "SELECT 
-                                    AVG(CAST($campo AS DECIMAL(10,2))) AS prom_dia
-                                FROM (
-                                    SELECT $campo
-                                    FROM reporte 
-                                    WHERE codigo_sensor = ? AND tipo_reporte = ?
-                                      AND $campo IS NOT NULL
-                                    ORDER BY fecha_captura DESC
-                                    LIMIT 100
-                                ) AS ultimos";
-                $stPromedioDia = $pdo->prepare($sqlPromedioDia);
-                $stPromedioDia->execute([$codSensor, $tipoReporteBusqueda]);
-                $promDiaRow = $stPromedioDia->fetch(PDO::FETCH_ASSOC) ?: ['prom_dia' => null];
-
-                // Usar el nombre del sensor + el campo si es múltiple
-                $nombreMostrar = $esMultiple ? $sensor['nombre'] . ' (' . ucfirst($campo) . ')' : $sensor['nombre'];
+                $stUltima->execute([$codSensor]);
+                $ultimaRow = $stUltima->fetch(PDO::FETCH_ASSOC);
                 
-                $datosUltimas[$codSensor . '_' . $campo] = [
-                    'nombre'  => $nombreMostrar,
-                    'codigo'  => $codSensor,
-                    'tipo'    => $campo,  // Siempre usar el campo específico como tipo
-                    'campo'   => $campo,
-                    'ultima'  => $ultimaRow,
-                    'promedio'=> [
-                        'prom_dia'   => $promDiaRow['prom_dia']
-                    ]
-                ];
+                if ($ultimaRow) {
+                    // Actualizar última fecha de lectura global
+                    if (!$ultimaFechaLectura || $ultimaRow['fecha_captura'] > $ultimaFechaLectura) {
+                        $ultimaFechaLectura = $ultimaRow['fecha_captura'];
+                    }
+                    
+                    // Promedio histórico (todos los reportes)
+                    $sqlPromedio = "SELECT AVG(CAST($campo AS DECIMAL(10,2))) AS promedio
+                                    FROM reporte 
+                                    WHERE codigo_sensor = ? AND $campo IS NOT NULL";
+                    $stPromedio = $pdo->prepare($sqlPromedio);
+                    $stPromedio->execute([$codSensor]);
+                    $promRow = $stPromedio->fetch(PDO::FETCH_ASSOC);
+                    
+                    // Agregar a la ubicación correspondiente
+                    if ($campo === 'temperatura' || $campo === 'humedad') {
+                        $datosPorUbicacion[$ubicacion][$campo][] = [
+                            'valor_actual' => $ultimaRow['valor'],
+                            'promedio' => $promRow['promedio'] ?? null,
+                            'sensor_codigo' => $codSensor,
+                            'sensor_nombre' => $sensor['nombre']
+                        ];
+                    } else {
+                        // Guardar otros sensores para el desplegable
+                        $datosPorUbicacion[$ubicacion]['otros'][] = [
+                            'nombre' => $sensor['nombre'],
+                            'codigo' => $codSensor,
+                            'tipo' => $campo,
+                            'valor_actual' => $ultimaRow['valor'],
+                            'promedio' => $promRow['promedio'] ?? null
+                        ];
+                    }
+                }
             }
+        }
+        
+        // Calcular promedios por ubicación
+        $resumenUbicaciones = [];
+        foreach (['exterior', 'interior', 'tuberia', 'otro'] as $ubicacion) {
+            $datos = $datosPorUbicacion[$ubicacion];
+            
+            // Calcular promedio de lecturas actuales de temperatura
+            $tempActual = null;
+            if (!empty($datos['temperatura'])) {
+                $valores = array_column($datos['temperatura'], 'valor_actual');
+                $tempActual = array_sum($valores) / count($valores);
+            }
+            
+            // Calcular promedio histórico de temperatura
+            $tempPromedio = null;
+            if (!empty($datos['temperatura'])) {
+                $promedios = array_filter(array_column($datos['temperatura'], 'promedio'), function($v) { return $v !== null; });
+                if (!empty($promedios)) {
+                    $tempPromedio = array_sum($promedios) / count($promedios);
+                }
+            }
+            
+            // Calcular promedio de lecturas actuales de humedad
+            $humActual = null;
+            if (!empty($datos['humedad'])) {
+                $valores = array_column($datos['humedad'], 'valor_actual');
+                $humActual = array_sum($valores) / count($valores);
+            }
+            
+            // Calcular promedio histórico de humedad
+            $humPromedio = null;
+            if (!empty($datos['humedad'])) {
+                $promedios = array_filter(array_column($datos['humedad'], 'promedio'), function($v) { return $v !== null; });
+                if (!empty($promedios)) {
+                    $humPromedio = array_sum($promedios) / count($promedios);
+                }
+            }
+            
+            $resumenUbicaciones[$ubicacion] = [
+                'temperatura_actual' => $tempActual,
+                'temperatura_promedio' => $tempPromedio,
+                'humedad_actual' => $humActual,
+                'humedad_promedio' => $humPromedio,
+                'otros_sensores' => $datos['otros'],
+                // Exponer sensores de temperatura/humedad para fallback del gráfico
+                'sensores_th' => (function($d) {
+                    $map = [];
+                    foreach (['temperatura','humedad'] as $k) {
+                        if (!empty($d[$k])) {
+                            foreach ($d[$k] as $row) {
+                                $code = $row['sensor_codigo'] ?? null;
+                                if ($code && !isset($map[$code])) {
+                                    $map[$code] = [
+                                        'codigo' => $code,
+                                        'nombre' => $row['sensor_nombre'] ?? $code
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                    return array_values($map);
+                })($datos)
+            ];
         }
         
         $resultado[] = [
@@ -138,7 +228,8 @@ try {
             'nombre' => $cuarto['nombre'],
             'descripcion' => $cuarto['descripcion'] ?? null,
             'codigo_finca' => $cuarto['codigo_finca'],
-            'sensores' => $datosUltimas
+            'ultima_lectura' => $ultimaFechaLectura,
+            'ubicaciones' => $resumenUbicaciones
         ];
     }
     
@@ -148,3 +239,4 @@ try {
     error_log("Error en dashboard.php: " . $e->getMessage());
     respond(['ok' => false, 'error' => $e->getMessage()], 500);
 }
+
