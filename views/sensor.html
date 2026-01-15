@@ -89,6 +89,7 @@
                 <th>Nombre</th>
                 <th>Tipo</th>
                 <th>Modelo</th>
+                <th>Ubicación</th>
                 <th>F. instalación</th>
                 <th>F. verificación</th>
                 <th>Valor actual</th>
@@ -183,7 +184,19 @@
               </select>
             </div>
 
-            <!-- Línea 5: activo -->
+            <!-- Línea 5: ubicación -->
+            <div class="col-md-12">
+              <label for="ubicacion" class="form-label">Ubicación del sensor</label>
+              <select id="ubicacion" class="form-select" required>
+                <option value="exterior">Exterior</option>
+                <option value="interior">Interior</option>
+                <option value="tuberia">Tubería</option>
+                <option value="otro">Otro</option>
+              </select>
+              <div class="form-text">Indica dónde está físicamente instalado el sensor</div>
+            </div>
+
+            <!-- Línea 6: activo -->
             <div class="col-12">
               <div class="form-check form-switch mt-2">
                 <input

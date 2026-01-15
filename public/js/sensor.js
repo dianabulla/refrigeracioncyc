@@ -16,6 +16,7 @@ function crearFilaSensor(item) {
     <td>${item.nombre || "-"}</td>
     <td>${item.tipo || "-"}</td>
     <td>${item.modelo || "-"}</td>
+    <td><span class="badge bg-info">${item.ubicacion || "exterior"}</span></td>
     <td>${fechaInst || "-"}</td>
     <td>${fechaVerif || "-"}</td>
     <td>${item.valor_actual || "-"}</td>
@@ -80,6 +81,7 @@ async function cargarCuartosSelect() {
 function limpiarFormularioSensor() {
   document.getElementById("formSensor").reset();
   document.getElementById("activo").checked = true;
+  document.getElementById("ubicacion").value = "exterior";
 
   const btn = document.getElementById("btnGuardarSensor");
   btn.dataset.modo = "crear";
@@ -106,6 +108,7 @@ function llenarFormularioSensor(data) {
 
   document.getElementById("valor_actual").value = data.valor_actual || "";
   document.getElementById("codigo_cuarto").value = data.codigo_cuarto || "";
+  document.getElementById("ubicacion").value = data.ubicacion || "exterior";
   document.getElementById("activo").checked = data.activo == 1;
 
   const btn = document.getElementById("btnGuardarSensor");
@@ -226,6 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .value.trim() || null,
       valor_actual: document.getElementById("valor_actual").value.trim() || null,
       codigo_cuarto: document.getElementById("codigo_cuarto").value.trim(),
+      ubicacion: document.getElementById("ubicacion").value.trim(),
       activo: document.getElementById("activo").checked ? 1 : 0,
     };
 
