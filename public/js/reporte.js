@@ -478,7 +478,6 @@ function crearFilaReporte(item) {
   const puerta = item.puerta !== null && item.puerta !== undefined ? parseFloat(item.puerta).toFixed(1) : '-';
   
   tr.innerHTML = `
-    <td>${item.id ?? '-'}</td>
     <td>${item.codigo ?? '-'}</td>
     <td>${item.nombre ?? '-'}</td>
     <td>${item.tipo_reporte ?? '-'}</td>
@@ -497,7 +496,6 @@ function crearFilaReporte(item) {
     <td class="text-center">${aire}</td>
     <td class="text-center">${otro}</td>
     <td class="text-center">${puerta}</td>
-    <td class="text-center"><span class="badge ${item.activo === 1 ? 'bg-success' : 'bg-secondary'}">${item.activo === 1 ? 'Activo' : 'Inactivo'}</span></td>
     <td>${item.fecha_creacion ?? '-'}</td>
     <td>${item.updated_at ?? '-'}</td>
   `;
@@ -543,7 +541,7 @@ async function cargarReportes() {
   
   try {
     // Mostrar mensaje de carga
-    tbody.innerHTML = '<tr><td colspan="22" class="text-center py-4"><i class="bi bi-hourglass-split"></i> Cargando reportes...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="20" class="text-center py-4"><i class="bi bi-hourglass-split"></i> Cargando reportes...</td></tr>';
     
     const res = await fetch(url);
     const data = await res.json();
@@ -551,13 +549,13 @@ async function cargarReportes() {
     tbody.innerHTML = "";
     
     if (!Array.isArray(data) || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="22" class="text-center py-4 text-muted"><i class="bi bi-inbox"></i> No se encontraron reportes</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="20" class="text-center py-4 text-muted"><i class="bi bi-inbox"></i> No se encontraron reportes</td></tr>';
       return;
     }
 
     data.forEach((item) => tbody.appendChild(crearFilaReporte(item)));
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="22" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar reportes</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="20" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar reportes</td></tr>';
     console.error('Error cargando reportes:', e);
   }
 }
