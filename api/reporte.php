@@ -142,7 +142,7 @@ try {
                     report_id, fecha_captura, fecha,
                     voltaje, amperaje, aire, otro, puerta,
                     presion_s, presion_e, temperatura, humedad,
-                    codigo_sensor, codigo_cuarto
+                    codigo_sensor, codigo_cuarto, ubicacion
                 )
                 VALUES (
                     :codigo, :nombre, :tipo_reporte,
@@ -150,7 +150,7 @@ try {
                     :report_id, :fecha_captura, :fecha,
                     :voltaje, :amperaje, :aire, :otro, :puerta,
                     :presion_s, :presion_e, :temperatura, :humedad,
-                    :codigo_sensor, :codigo_cuarto
+                    :codigo_sensor, :codigo_cuarto, :ubicacion
                 )";
 
         $st = $pdo->prepare($sql);
@@ -170,7 +170,7 @@ try {
             }
 
             // Buscar el codigo_cuarto y tipo desde el sensor
-            $stSensor = $pdo->prepare("SELECT codigo_cuarto, tipo FROM sensor WHERE codigo = ?");
+            $stSensor = $pdo->prepare("SELECT codigo_cuarto, tipo, ubicacion FROM sensor WHERE codigo = ?");
             $stSensor->execute([$codigoSensor]);
             $sensorData = $stSensor->fetch(PDO::FETCH_ASSOC);
             
@@ -185,6 +185,7 @@ try {
 
             $codigoCuarto = $sensorData['codigo_cuarto'];
             $tipoReporte = $sensorData['tipo'];
+            $ubicacion = $sensorData['ubicacion'] ?? 'exterior';
 
             // Ejecutar insert
             try {
@@ -207,6 +208,7 @@ try {
                     ':humedad'       => isset($d['humedad']) ? floatval($d['humedad']) : null,
                     ':codigo_sensor' => $codigoSensor,
                     ':codigo_cuarto' => $codigoCuarto,
+                    ':ubicacion'     => $ubicacion,
                 ]);
             } catch (Exception $e) {
                 $ok = false;

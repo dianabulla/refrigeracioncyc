@@ -44,6 +44,7 @@ class Sensor
         $tipo     = trim($data['tipo'] ?? '');
         $modelo   = trim($data['modelo'] ?? '');
         $cuarto   = trim($data['codigo_cuarto'] ?? '');
+        $ubicacion = trim($data['ubicacion'] ?? 'exterior');
 
         if ($codigo === '' || $nombre === '' || $tipo === '' || $cuarto === '') {
             return false;
@@ -53,10 +54,10 @@ class Sensor
 
         $sql = "INSERT INTO sensor 
                 (codigo, nombre, tipo, modelo, fecha_instalacion, fecha_verificacion, valor_actual, 
-                 activo, fecha_creacion, codigo_cuarto)
+                 activo, fecha_creacion, codigo_cuarto, ubicacion)
                 VALUES
                 (:codigo, :nombre, :tipo, :modelo, :fecha_instalacion, :fecha_verificacion, 
-                 :valor_actual, :activo, NOW(), :codigo_cuarto)";
+                 :valor_actual, :activo, NOW(), :codigo_cuarto, :ubicacion)";
 
         $st = $this->pdo->prepare($sql);
 
@@ -70,6 +71,7 @@ class Sensor
             ':valor_actual'       => $data['valor_actual'] ?? null,
             ':activo'             => isset($data['activo']) ? (int)$data['activo'] : 1,
             ':codigo_cuarto'      => $cuarto,
+            ':ubicacion'          => $ubicacion,
         ]);
     }
 

@@ -47,9 +47,9 @@ try {
         continue;
       }
       
-      // Obtener información del sensor incluyendo su tipo
+      // Obtener información del sensor incluyendo su tipo y ubicacion
       $stmt = $pdo->prepare("
-          SELECT s.codigo, s.codigo_cuarto, s.tipo, c.codigo_finca, f.codigo_empresa
+          SELECT s.codigo, s.codigo_cuarto, s.tipo, s.ubicacion, c.codigo_finca, f.codigo_empresa
           FROM sensor s
           INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
           INNER JOIN finca f ON c.codigo_finca = f.codigo
