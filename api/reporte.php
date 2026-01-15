@@ -68,7 +68,9 @@ try {
         }
 
         // Listado con filtros
-        $sql = "SELECT r.* FROM reporte r 
+        $sql = "SELECT r.*, 
+                COALESCE(r.ubicacion, s.ubicacion, 'exterior') as ubicacion
+                FROM reporte r 
                 INNER JOIN sensor s ON r.codigo_sensor = s.codigo
                 INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
                 INNER JOIN finca f ON c.codigo_finca = f.codigo
