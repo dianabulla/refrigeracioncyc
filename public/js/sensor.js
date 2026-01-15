@@ -11,20 +11,24 @@ function crearFilaSensor(item) {
   const fechaVerif = item.fecha_verificacion || "";
 
   tr.innerHTML = `
-    <td><strong>${item.codigo || "-"}</strong></td>
+    <td>${item.id ?? "-"}</td>
+    <td>${item.codigo || "-"}</td>
     <td>${item.nombre || "-"}</td>
-    <td><span class="badge bg-secondary">${item.tipo || "-"}</span></td>
+    <td>${item.tipo || "-"}</td>
+    <td>${item.modelo || "-"}</td>
     <td><span class="badge bg-info">${item.ubicacion || "exterior"}</span></td>
-    <td><small class="text-muted">${item.codigo_cuarto || "-"}</small></td>
+    <td>${fechaInst || "-"}</td>
+    <td>${fechaVerif || "-"}</td>
     <td>${item.valor_actual || "-"}</td>
+    <td>${item.codigo_cuarto || "-"}</td>
     <td>${item.activo == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>'}</td>
     <td>
       <button class="btn btn-sm btn-outline-primary me-1"
-              onclick="editarSensor('${item.codigo}')" title="Editar sensor">
+              onclick="editarSensor('${item.codigo}')">
         <i class="bi bi-pencil"></i>
       </button>
       <button class="btn btn-sm btn-outline-danger"
-              onclick="eliminarSensor('${item.codigo}')" title="Eliminar sensor">
+              onclick="eliminarSensor('${item.codigo}')">
         <i class="bi bi-trash"></i>
       </button>
     </td>
