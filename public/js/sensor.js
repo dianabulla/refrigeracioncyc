@@ -10,13 +10,23 @@ function crearFilaSensor(item) {
   const fechaInst = item.fecha_instalacion || "";
   const fechaVerif = item.fecha_verificacion || "";
 
+  // Colores específicos para cada ubicación
+  const coloresUbicacion = {
+    'exterior': 'bg-success',     // Verde
+    'interior': 'bg-warning',      // Naranja/Amarillo
+    'tuberia': 'bg-danger',        // Rojo
+    'otro': 'bg-secondary'         // Gris
+  };
+  
+  const badgeColor = coloresUbicacion[item.ubicacion] || 'bg-info';
+
   tr.innerHTML = `
     <td>${item.id ?? "-"}</td>
     <td>${item.codigo || "-"}</td>
     <td>${item.nombre || "-"}</td>
     <td>${item.tipo || "-"}</td>
     <td>${item.modelo || "-"}</td>
-    <td><span class="badge bg-info">${item.ubicacion || "exterior"}</span></td>
+    <td><span class="badge ${badgeColor}">${item.ubicacion || "exterior"}</span></td>
     <td>${fechaInst || "-"}</td>
     <td>${fechaVerif || "-"}</td>
     <td>${item.valor_actual || "-"}</td>

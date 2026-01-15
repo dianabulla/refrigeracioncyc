@@ -477,6 +477,16 @@ function crearFilaReporte(item) {
   const otro = item.otro !== null && item.otro !== undefined ? parseFloat(item.otro).toFixed(1) : '-';
   const puerta = item.puerta !== null && item.puerta !== undefined ? parseFloat(item.puerta).toFixed(1) : '-';
   
+  // Colores específicos para cada ubicación
+  const coloresUbicacion = {
+    'exterior': 'bg-success',     // Verde
+    'interior': 'bg-warning',      // Naranja/Amarillo
+    'tuberia': 'bg-danger',        // Rojo
+    'otro': 'bg-secondary'         // Gris
+  };
+  
+  const badgeColor = coloresUbicacion[item.ubicacion] || 'bg-info';
+  
   tr.innerHTML = `
     <td>${item.codigo ?? '-'}</td>
     <td>${item.nombre ?? '-'}</td>
@@ -484,7 +494,7 @@ function crearFilaReporte(item) {
     <td>${item.report_id ?? '-'}</td>
     <td>${item.codigo_sensor ?? '-'}</td>
     <td>${item.codigo_cuarto ?? '-'}</td>
-    <td><span class="badge bg-info">${item.ubicacion ?? 'exterior'}</span></td>
+    <td><span class="badge ${badgeColor}">${item.ubicacion ?? 'exterior'}</span></td>
     <td>${item.fecha_captura ?? '-'}</td>
     <td>${item.fecha ?? '-'}</td>
     <td class="text-center">${temp}</td>
