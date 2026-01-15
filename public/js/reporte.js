@@ -485,6 +485,7 @@ function crearFilaReporte(item) {
     <td>${item.report_id ?? '-'}</td>
     <td>${item.codigo_sensor ?? '-'}</td>
     <td>${item.codigo_cuarto ?? '-'}</td>
+    <td><span class="badge bg-info">${item.ubicacion ?? 'exterior'}</span></td>
     <td>${item.fecha_captura ?? '-'}</td>
     <td>${item.fecha ?? '-'}</td>
     <td class="text-center">${temp}</td>
@@ -542,7 +543,7 @@ async function cargarReportes() {
   
   try {
     // Mostrar mensaje de carga
-    tbody.innerHTML = '<tr><td colspan="21" class="text-center py-4"><i class="bi bi-hourglass-split"></i> Cargando reportes...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="22" class="text-center py-4"><i class="bi bi-hourglass-split"></i> Cargando reportes...</td></tr>';
     
     const res = await fetch(url);
     const data = await res.json();
@@ -550,13 +551,13 @@ async function cargarReportes() {
     tbody.innerHTML = "";
     
     if (!Array.isArray(data) || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="21" class="text-center py-4 text-muted"><i class="bi bi-inbox"></i> No se encontraron reportes</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="22" class="text-center py-4 text-muted"><i class="bi bi-inbox"></i> No se encontraron reportes</td></tr>';
       return;
     }
 
     data.forEach((item) => tbody.appendChild(crearFilaReporte(item)));
   } catch (e) {
-    tbody.innerHTML = '<tr><td colspan="21" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar reportes</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="22" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar reportes</td></tr>';
     console.error('Error cargando reportes:', e);
   }
 }
