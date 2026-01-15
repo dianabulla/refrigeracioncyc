@@ -20,73 +20,109 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 try {
 
-  /* ============== POST - Recibir datos de sensores IoT ============== */
+  /* ============== POST - Recibir datos de sensores IoT (array de reportes) ============== */
   if ($method === 'POST') {
     
-    $data = json_decode(file_get_contents('php://input'), true);
+    $input = json_decode(file_get_contents('php://input'), true);
     
-    // Validar datos requeridos
-    $codigo_sensor = $data['codigo_sensor'] ?? null;
+    // Soportar tanto array de reportes como un único reporte
+    $reportes = is_array($input) && !isset($input['codigo_sensor']) ? $input : [$input];
     
-    if (!$codigo_sensor) {
-      respond(['error' => 'codigo_sensor es requerido'], 400);
+    if (empty($reportes)) {
+      respond(['error' => 'No se proporcionaron reportes'], 400);
     }
     
-    // Obtener información del sensor incluyendo su tipo
-    $stmt = $pdo->prepare("
-        SELECT s.codigo, s.codigo_cuarto, s.tipo, c.codigo_finca, f.codigo_empresa
-        FROM sensor s
-        INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
-        INNER JOIN finca f ON c.codigo_finca = f.codigo
-        WHERE s.codigo = ?
-    ");
-    $stmt->execute([$codigo_sensor]);
-    $sensor = $stmt->fetch(PDO::FETCH_ASSOC);
+    $resultados = [];
+    $errores = [];
     
-    if (!$sensor) {
-      respond(['error' => 'Sensor no encontrado'], 404);
+    foreach ($reportes as $index => $data) {
+      // Validar datos requeridos
+      $codigo_sensor = $data['codigo_sensor'] ?? null;
+      
+      if (!$codigo_sensor) {
+        $errores[] = [
+          'index' => $index,
+          'error' => 'codigo_sensor es requerido'
+        ];
+        continue;
+      }
+      
+      // Obtener información del sensor incluyendo su tipo
+      $stmt = $pdo->prepare("
+          SELECT s.codigo, s.codigo_cuarto, s.tipo, c.codigo_finca, f.codigo_empresa
+          FROM sensor s
+          INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+          INNER JOIN finca f ON c.codigo_finca = f.codigo
+          WHERE s.codigo = ?
+      ");
+      $stmt->execute([$codigo_sensor]);
+      $sensor = $stmt->fetch(PDO::FETCH_ASSOC);
+      
+      if (!$sensor) {
+        $errores[] = [
+          'index' => $index,
+          'codigo_sensor' => $codigo_sensor,
+          'error' => 'Sensor no encontrado'
+        ];
+        continue;
+      }
+      
+      // El tipo_reporte viene del sensor, no de lo que envía la ESP32
+      $tipo_reporte = $sensor['tipo'];
+      
+      // Preparar datos del reporte (todos los campos de la tabla)
+      $reporteData = [
+        'codigo' => $data['codigo'] ?? null,
+        'nombre' => $data['nombre'] ?? null,
+        'tipo_reporte' => $tipo_reporte,
+        'activo' => 1,
+        'report_id' => $data['report_id'] ?? null,
+        'fecha_captura' => $data['fecha_captura'] ?? null,
+        'fecha' => $data['fecha'] ?? null,
+        'voltaje' => isset($data['voltaje']) ? floatval($data['voltaje']) : null,
+        'amperaje' => isset($data['amperaje']) ? floatval($data['amperaje']) : null,
+        'aire' => isset($data['aire']) ? floatval($data['aire']) : null,
+        'otro' => isset($data['otro']) ? floatval($data['otro']) : null,
+        'puerta' => isset($data['puerta']) ? floatval($data['puerta']) : null,
+        'presion_s' => isset($data['presion_s']) ? floatval($data['presion_s']) : null,
+        'presion_e' => isset($data['presion_e']) ? floatval($data['presion_e']) : null,
+        'temperatura' => isset($data['temperatura']) ? floatval($data['temperatura']) : null,
+        'humedad' => isset($data['humedad']) ? floatval($data['humedad']) : null,
+        'codigo_sensor' => $codigo_sensor,
+        'codigo_cuarto' => $sensor['codigo_cuarto'] // Asignar desde la BD según el sensor
+      ];
+      
+      // Insertar reporte
+      $success = $model->crear($reporteData);
+      
+      if ($success) {
+        $resultados[] = [
+          'index' => $index,
+          'codigo_sensor' => $codigo_sensor,
+          'success' => true,
+          'codigo' => $reporteData['codigo']
+        ];
+      } else {
+        // Intenta obtener el error específico si existe
+        $errorDetail = isset($model) && method_exists($model, 'getLastError') ? $model->getLastError() : 'Error desconocido';
+        $errores[] = [
+          'index' => $index,
+          'codigo_sensor' => $codigo_sensor,
+          'error' => 'Error al guardar el reporte',
+          'detalle' => $errorDetail
+        ];
+      }
     }
     
-    // El tipo_reporte viene del sensor, no de lo que envía la ESP32
-    $tipo_reporte = $sensor['tipo'];
-    
-    // Preparar datos del reporte (todos los campos de la tabla)
-    $reporteData = [
-      //'codigo' => uniqid('IOT_', true),  // Generar código único para el reporte
-      'codigo' => $data['codigo'] ?? null,  // Generar código único para el reporte
-      'nombre' => $data['nombre'] ?? null,
-      'tipo_reporte' => $tipo_reporte,
-      'activo' => 1,
-      'report_id' => $data['report_id'] ?? null,
-      //'fecha_captura' => date('Y-m-d H:i:s'),
-      //'fecha' => date('Y-m-d'),
-      'fecha_captura' => $data['fecha_captura'] ?? null,
-      'fecha' => $data['fecha'] ?? null,
-      'voltaje' => isset($data['voltaje']) ? floatval($data['voltaje']) : null,
-      'amperaje' => isset($data['amperaje']) ? floatval($data['amperaje']) : null,
-      'aire' => isset($data['aire']) ? floatval($data['aire']) : null,
-      'otro' => isset($data['otro']) ? floatval($data['otro']) : null,
-      'puerta' => isset($data['puerta']) ? floatval($data['puerta']) : null,
-      'presion_s' => isset($data['presion_s']) ? floatval($data['presion_s']) : null,
-      'presion_e' => isset($data['presion_e']) ? floatval($data['presion_e']) : null,
-      'temperatura' => isset($data['temperatura']) ? floatval($data['temperatura']) : null,
-      'humedad' => isset($data['humedad']) ? floatval($data['humedad']) : null,
-      'codigo_sensor' => $codigo_sensor,
-      'codigo_cuarto' => $sensor['codigo_cuarto'] // Asignar desde la BD según el sensor
-    ];
-    
-    // Insertar reporte
-    $success = $model->crear($reporteData);
-    
-    if ($success) {
-      respond([
-        'success' => true,
-        'message' => 'Datos recibidos correctamente',
-        'codigo' => $reporteData['codigo']
-      ], 201);
-    } else {
-      respond(['error' => 'Error al guardar el reporte'], 500);
-    }
+    // Responder con resumen
+    respond([
+      'success' => count($errores) === 0,
+      'message' => count($resultados) . ' reporte(s) insertado(s) correctamente',
+      'insertados' => count($resultados),
+      'errores_cantidad' => count($errores),
+      'resultados' => $resultados,
+      'errores' => $errores
+    ], count($errores) > 0 ? 207 : 201);
   }
 
   else {

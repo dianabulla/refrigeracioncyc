@@ -121,28 +121,21 @@ try {
         respond($st->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    // ---------- POST: crear reporte ----------
-    // Normalmente lo usarán tus dispositivos/servicios, no la web
+    // ---------- POST: crear reporte(s) ----------
+    // Soporta array de reportes o un único reporte
     if ($method === 'POST') {
-        $d = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($d)) $d = $_POST;
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) $input = $_POST;
 
-        // Obtener información del sensor: codigo_cuarto y tipo
-        $codigoSensor = $d['codigo_sensor'] ?? null;
-        $codigoCuarto = null;
-        $tipoReporte = null;
-        
-        if ($codigoSensor) {
-            // Buscar el codigo_cuarto y tipo desde el sensor
-            $stSensor = $pdo->prepare("SELECT codigo_cuarto, tipo FROM sensor WHERE codigo = ?");
-            $stSensor->execute([$codigoSensor]);
-            $sensorData = $stSensor->fetch(PDO::FETCH_ASSOC);
-            if ($sensorData) {
-                $codigoCuarto = $sensorData['codigo_cuarto'];
-                $tipoReporte = $sensorData['tipo'];  // Obtener el tipo desde el sensor
-            }
+        // Detectar si es un array de reportes o un único reporte
+        $reportes = (isset($input[0]) && is_array($input[0])) ? $input : [$input];
+
+        if (empty($reportes)) {
+            respond(['error' => 'No se proporcionaron reportes'], 400);
         }
 
+        $resultados = [];
+        $errores = [];
         $sql = "INSERT INTO reporte (
                     codigo, nombre, tipo_reporte,
                     activo, fecha_creacion,
@@ -161,29 +154,102 @@ try {
                 )";
 
         $st = $pdo->prepare($sql);
-        $ok = $st->execute([
-            ':codigo'        => trim($d['codigo'] ?? ''),
-            ':nombre'        => $d['nombre'] ?? null,
-            ':tipo_reporte'  => $tipoReporte,  // Usar el tipo obtenido del sensor
-            ':activo'        => isset($d['activo']) ? (int)$d['activo'] : 1,
-            ':report_id'     => $d['report_id'] ?? null,
-            ':fecha_captura' => $d['fecha_captura'] ?? null,
-            ':fecha'         => $d['fecha'] ?? null,
-            ':voltaje'       => $d['voltaje'] ?? null,
-            ':amperaje'      => $d['amperaje'] ?? null,
-            ':aire'          => $d['aire'] ?? null,
-            ':otro'          => $d['otro'] ?? null,
-            ':puerta'        => $d['puerta'] ?? null,
-            ':presion_s'     => $d['presion_s'] ?? null,
-            ':presion_e'     => $d['presion_e'] ?? null,
-            ':temperatura'   => $d['temperatura'] ?? null,
-            ':humedad'       => $d['humedad'] ?? null,
-            ':codigo_sensor' => $codigoSensor,
-            ':codigo_cuarto' => $codigoCuarto,
-        ]);
 
-        $ok ? respond(['ok' => true], 201)
-            : respond(['error' => 'No se pudo crear'], 400);
+        foreach ($reportes as $index => $d) {
+            // Obtener información del sensor: codigo_cuarto y tipo
+            $codigoSensor = $d['codigo_sensor'] ?? null;
+            $codigoCuarto = null;
+            $tipoReporte = null;
+            
+            if (!$codigoSensor) {
+                $errores[] = [
+                    'index' => $index,
+                    'error' => 'codigo_sensor es requerido'
+                ];
+                continue;
+            }
+
+            // Buscar el codigo_cuarto y tipo desde el sensor
+            $stSensor = $pdo->prepare("SELECT codigo_cuarto, tipo FROM sensor WHERE codigo = ?");
+            $stSensor->execute([$codigoSensor]);
+            $sensorData = $stSensor->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$sensorData) {
+                $errores[] = [
+                    'index' => $index,
+                    'codigo_sensor' => $codigoSensor,
+                    'error' => 'Sensor no encontrado'
+                ];
+                continue;
+            }
+
+            $codigoCuarto = $sensorData['codigo_cuarto'];
+            $tipoReporte = $sensorData['tipo'];
+
+            // Ejecutar insert
+            try {
+                $ok = $st->execute([
+                    ':codigo'        => trim($d['codigo'] ?? ''),
+                    ':nombre'        => $d['nombre'] ?? null,
+                    ':tipo_reporte'  => $tipoReporte,
+                    ':activo'        => isset($d['activo']) ? (int)$d['activo'] : 1,
+                    ':report_id'     => $d['report_id'] ?? null,
+                    ':fecha_captura' => $d['fecha_captura'] ?? null,
+                    ':fecha'         => $d['fecha'] ?? null,
+                    ':voltaje'       => isset($d['voltaje']) ? floatval($d['voltaje']) : null,
+                    ':amperaje'      => isset($d['amperaje']) ? floatval($d['amperaje']) : null,
+                    ':aire'          => isset($d['aire']) ? floatval($d['aire']) : null,
+                    ':otro'          => isset($d['otro']) ? floatval($d['otro']) : null,
+                    ':puerta'        => isset($d['puerta']) ? floatval($d['puerta']) : null,
+                    ':presion_s'     => isset($d['presion_s']) ? floatval($d['presion_s']) : null,
+                    ':presion_e'     => isset($d['presion_e']) ? floatval($d['presion_e']) : null,
+                    ':temperatura'   => isset($d['temperatura']) ? floatval($d['temperatura']) : null,
+                    ':humedad'       => isset($d['humedad']) ? floatval($d['humedad']) : null,
+                    ':codigo_sensor' => $codigoSensor,
+                    ':codigo_cuarto' => $codigoCuarto,
+                ]);
+            } catch (Exception $e) {
+                $ok = false;
+                $errorMsg = $e->getMessage();
+            }
+            
+            // Si no hay excepción pero execute falló, obtener error de PDO
+            if (!$ok && !isset($errorMsg)) {
+                $errorInfo = $st->errorInfo();
+                $errorMsg = isset($errorInfo[2]) ? $errorInfo[2] : 'Error desconocido en PDO';
+            }
+
+            if ($ok) {
+                $resultados[] = [
+                    'index' => $index,
+                    'codigo_sensor' => $codigoSensor,
+                    'success' => true,
+                    'codigo' => $d['codigo'] ?? null
+                ];
+            } else {
+                $errores[] = [
+                    'index' => $index,
+                    'codigo_sensor' => $codigoSensor,
+                    'error' => 'Error al guardar el reporte',
+                    'detalle' => isset($errorMsg) ? $errorMsg : 'Error desconocido',
+                    'datos_enviados' => [
+                        'codigo' => trim($d['codigo'] ?? ''),
+                        'fecha_captura' => $d['fecha_captura'] ?? null,
+                        'codigo_sensor' => $codigoSensor
+                    ]
+                ];
+            }
+        }
+
+        // Responder con resumen
+        respond([
+            'success' => count($errores) === 0,
+            'message' => count($resultados) . ' reporte(s) insertado(s) correctamente',
+            'insertados' => count($resultados),
+            'errores_cantidad' => count($errores),
+            'resultados' => $resultados,
+            'errores' => $errores
+        ], count($errores) > 0 ? 207 : 201);
     }
 
     // ---------- PUT: actualizar reporte por código ----------
