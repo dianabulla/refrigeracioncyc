@@ -8,14 +8,14 @@ function crearFilaFinca(item) {
   tr.dataset.codigo = item.codigo || "";
 
   tr.innerHTML = `
-    <td>${item.id ?? "-"}</td>
+    <td class="d-none d-md-table-cell">${item.id ?? "-"}</td>
     <td>${item.codigo || "-"}</td>
     <td>${item.nombre || "-"}</td>
-    <td>${item.telefono || "-"}</td>
-    <td>${item.direccion || "-"}</td>
-    <td>${item.codigo_empresa || "-"}</td>
+    <td class="d-none d-lg-table-cell">${item.telefono || "-"}</td>
+    <td class="d-none d-md-table-cell">${item.direccion || "-"}</td>
+    <td class="d-none d-md-table-cell">${item.codigo_empresa || "-"}</td>
     <td>${item.activo === 1 ? "Activo" : "Inactivo"}</td>
-    <td>
+    <td style="width:100px;">
       <button class="btn btn-sm btn-outline-primary me-1"
               onclick="editarFinca('${item.codigo}')">
         <i class="bi bi-pencil"></i>

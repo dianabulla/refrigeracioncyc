@@ -21,18 +21,18 @@ function crearFilaSensor(item) {
   const badgeColor = coloresUbicacion[item.ubicacion] || 'bg-info';
 
   tr.innerHTML = `
-    <td>${item.id ?? "-"}</td>
+    <td class="d-none d-md-table-cell">${item.id ?? "-"}</td>
     <td>${item.codigo || "-"}</td>
     <td>${item.nombre || "-"}</td>
     <td>${item.tipo || "-"}</td>
-    <td>${item.modelo || "-"}</td>
+    <td class="d-none d-lg-table-cell">${item.modelo || "-"}</td>
     <td><span class="badge ${badgeColor}">${item.ubicacion || "exterior"}</span></td>
-    <td>${fechaInst || "-"}</td>
-    <td>${fechaVerif || "-"}</td>
-    <td>${item.valor_actual || "-"}</td>
-    <td>${item.codigo_cuarto || "-"}</td>
-    <td>${item.activo == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>'}</td>
-    <td>
+    <td class="d-none d-lg-table-cell">${fechaInst || "-"}</td>
+    <td class="d-none d-xl-table-cell">${fechaVerif || "-"}</td>
+    <td class="d-none d-md-table-cell">${item.valor_actual || "-"}</td>
+    <td class="d-none d-md-table-cell">${item.codigo_cuarto || "-"}</td>
+    <td>${item.activo == 1 ? '<span class="badge bg-success">Act.</span>' : '<span class="badge bg-danger">Inact.</span>'}</td>
+    <td style="width:100px;">
       <button class="btn btn-sm btn-outline-primary me-1"
               onclick="editarSensor('${item.codigo}')">
         <i class="bi bi-pencil"></i>

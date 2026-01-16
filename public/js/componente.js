@@ -31,9 +31,9 @@ async function cargarComponentes() {
             tr.innerHTML = `
                 <td><strong>${comp.codigo}</strong></td>
                 <td>${comp.nombre}</td>
-                <td>${comp.tipo ?? "-"}</td>
-                <td>${comp.codigo_cuarto ?? "-"}</td>
-                <td>${comp.descripcion ? comp.descripcion.substring(0, 50) + "..." : "-"}</td>
+                <td class="d-none d-md-table-cell">${comp.tipo ?? "-"}</td>
+                <td class="d-none d-md-table-cell">${comp.codigo_cuarto ?? "-"}</td>
+                <td class="d-none d-lg-table-cell">${comp.descripcion ? comp.descripcion.substring(0, 50) + "..." : "-"}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-warning" onclick="editar(${comp.id})" title="Editar">
                         <i class="bi bi-pencil"></i>

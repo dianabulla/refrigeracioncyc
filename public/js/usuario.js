@@ -73,14 +73,14 @@ async function cargarUsuarios() {
       const nombreFinc = fincasMap[u.codigo_finca] || u.codigo_finca || "-";
 
       tr.innerHTML = `
-        <td>${u.id ?? "-"}</td>
-        <td>${u.codigo || "-"}</td>
+        <td class="d-none d-md-table-cell">${u.id ?? "-"}</td>
+        <td class="d-none d-lg-table-cell">${u.codigo || "-"}</td>
         <td>${u.nombre || "-"}</td>
-        <td>${u.email || "-"}</td>
+        <td class="d-none d-lg-table-cell">${u.email || "-"}</td>
         <td>${nombreRol}</td>
-        <td>${nombreFinc}</td>
+        <td class="d-none d-md-table-cell">${nombreFinc}</td>
         <td>${u.activo ? "Activo" : "Inactivo"}</td>
-        <td class="text-end">
+        <td class="text-end" style="width:100px;">
           <button class="btn btn-sm btn-warning me-1" onclick="editarUsuario(${u.id})">
             <i class="bi bi-pencil"></i>
           </button>

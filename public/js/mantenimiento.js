@@ -25,11 +25,11 @@ async function cargarMantenimientos() {
             tr.innerHTML = `
                 <td>${item.codigo}</td>
                 <td>${item.nombre}</td>
-                <td>${item.tipo ?? "-"}</td>
-                <td>${item.codigo_componente ?? "-"}</td>
-                <td>${item.codigo_cuarto ?? "-"}</td>
-                <td>${item.fecha_inicio ?? "-"}</td>
-                <td>${item.fecha_fin ?? "-"}</td>
+                <td class="d-none d-md-table-cell">${item.tipo ?? "-"}</td>
+                <td class="d-none d-md-table-cell">${item.codigo_componente ?? "-"}</td>
+                <td class="d-none d-md-table-cell">${item.codigo_cuarto ?? "-"}</td>
+                <td class="d-none d-lg-table-cell">${item.fecha_inicio ?? "-"}</td>
+                <td class="d-none d-lg-table-cell">${item.fecha_fin ?? "-"}</td>
 
                 <td class="text-center">
                     <button class="btn btn-sm btn-warning" onclick="editar('${item.codigo}')">

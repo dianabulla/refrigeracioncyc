@@ -45,7 +45,7 @@ async function cargarRoles() {
         tr.innerHTML = `
             <td>${r.codigo}</td>
             <td>${r.nombre}</td>
-            <td>${r.descripcion ?? "-"}</td>
+            <td class="d-none d-md-table-cell">${r.descripcion ?? "-"}</td>
             <td>${r.activo === 1 ? "Activo" : "Inactivo"}</td>
 
             <td class="text-center">

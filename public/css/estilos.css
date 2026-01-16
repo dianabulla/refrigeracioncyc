@@ -1586,45 +1586,68 @@ table tbody td {
 table th {
   font-weight: 600;
   white-space: normal;
-  word-break: break-word;
-  font-size: 0.9rem;
 }
 
-/* Móvil: permitir que los headers se adapten */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Móvil: tablas más compactas */
 @media (max-width: 575px) {
-  table th {
-    font-size: 0.8rem;
-    padding: 8px 6px !important;
-    white-space: normal;
-    word-break: break-word;
+  .table {
+    font-size: 0.75rem;
+    margin-bottom: 0;
   }
   
-  table td {
-    font-size: 0.8rem;
-    padding: 6px 4px !important;
+  .table thead th {
+    font-size: 0.7rem;
+    padding: 6px 3px !important;
+    white-space: nowrap;
+    line-height: 1.2;
   }
   
-  /* Remover text-nowrap en móvil */
-  table th.text-nowrap {
-    white-space: normal !important;
+  .table tbody td {
+    font-size: 0.75rem;
+    padding: 5px 3px !important;
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.65rem;
   }
 }
 
 /* Tablet */
 @media (min-width: 576px) and (max-width: 991px) {
-  table th {
-    font-size: 0.85rem;
-    padding: 8px 6px !important;
+  .table {
+    font-size: 0.9rem;
   }
   
-  table td {
+  .table thead th {
     font-size: 0.85rem;
+    padding: 8px 6px !important;
+    white-space: nowrap;
+  }
+  
+  .table tbody td {
+    font-size: 0.85rem;
+    padding: 7px 5px !important;
   }
 }
 
-/* Desktop: permitir text-nowrap */
+/* Desktop: normal */
 @media (min-width: 992px) {
-  table th {
+  .table {
+    font-size: 0.9rem;
+  }
+  
+  .table thead th {
+    font-size: 0.9rem;
     white-space: nowrap;
+  }
+  
+  .table tbody td {
+    font-size: 0.9rem;
   }
 }
