@@ -1238,26 +1238,25 @@ table tbody td {
   display: grid;
   gap: 15px;
   margin-bottom: 15px;
+  grid-template-columns: repeat(2, 1fr);
 }
 
-/* Móvil pequeño: 2 columnas */
+/* En todas las pantallas: 2 columnas (2x2 grid para 4 ubicaciones) */
 @media (max-width: 576px) {
   .ubicaciones-wrap {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Móvil grande y tablet: 2 columnas */
 @media (min-width: 577px) and (max-width: 991px) {
   .ubicaciones-wrap {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Tablet grande y PC: 4 columnas siempre */
 @media (min-width: 992px) {
   .ubicaciones-wrap {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1267,7 +1266,6 @@ table tbody td {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 15px;
-  /* Removido margin-bottom para que el grid funcione correctamente */
 }
 
 .ubicacion-header {
