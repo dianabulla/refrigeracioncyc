@@ -1579,3 +1579,52 @@ table tbody td {
   color: #999;
   margin: 0;
 }
+
+/* =====================================================
+   TABLAS - HEADERS RESPONSIVOS
+===================================================== */
+table th {
+  font-weight: 600;
+  white-space: normal;
+  word-break: break-word;
+  font-size: 0.9rem;
+}
+
+/* Móvil: permitir que los headers se adapten */
+@media (max-width: 575px) {
+  table th {
+    font-size: 0.8rem;
+    padding: 8px 6px !important;
+    white-space: normal;
+    word-break: break-word;
+  }
+  
+  table td {
+    font-size: 0.8rem;
+    padding: 6px 4px !important;
+  }
+  
+  /* Remover text-nowrap en móvil */
+  table th.text-nowrap {
+    white-space: normal !important;
+  }
+}
+
+/* Tablet */
+@media (min-width: 576px) and (max-width: 991px) {
+  table th {
+    font-size: 0.85rem;
+    padding: 8px 6px !important;
+  }
+  
+  table td {
+    font-size: 0.85rem;
+  }
+}
+
+/* Desktop: permitir text-nowrap */
+@media (min-width: 992px) {
+  table th {
+    white-space: nowrap;
+  }
+}
