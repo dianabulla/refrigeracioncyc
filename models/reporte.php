@@ -4,36 +4,62 @@ class Reporte
 {
     /** @var PDO */
     private $pdo;
+    private ?array $columnCache = null;
 
     public function __construct(PDO $pdo) {
         $this->pdo = $pdo;
     }
 
+    private function getColumns(): array
+    {
+        if ($this->columnCache !== null) {
+            return $this->columnCache;
+        }
+
+        $columns = [];
+        try {
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM reporte");
+            $columns = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        } catch (PDOException $e) {
+            error_log("Reporte getColumns: " . $e->getMessage());
+        }
+
+        $this->columnCache = $columns;
+        return $columns;
+    }
+
     public function crear(array $d): bool {
         try {
-            $sql = "INSERT INTO reporte (
-                        codigo, nombre, tipo_reporte,
-                        activo, fecha_creacion,
-                        report_id, fecha_captura, fecha,
-                        voltaje, amperaje, aire, otro, puerta,
-                        presion_s, presion_e, temperatura, humedad,
-                        codigo_sensor,
-                        codigo_cuarto,
-                        ubicacion
-                    )
-                    VALUES (
-                        :codigo, :nombre, :tipo_reporte,
-                        :activo, NOW(),
-                        :report_id, :fecha_captura, :fecha,
-                        :voltaje, :amperaje, :aire, :otro, :puerta,
-                        :presion_s, :presion_e, :temperatura, :humedad,
-                        :codigo_sensor,
-                        :codigo_cuarto,
-                        :ubicacion
-                    )";
+            $columns = $this->getColumns();
+
+            $baseColumns = [
+                'codigo', 'nombre', 'tipo_reporte',
+                'activo', 'fecha_creacion',
+                'report_id', 'fecha_captura', 'fecha',
+                'voltaje', 'amperaje', 'aire', 'otro', 'puerta',
+                'presion_s', 'presion_e', 'temperatura', 'humedad',
+                'codigo_sensor',
+                'codigo_cuarto',
+                'ubicacion'
+            ];
+
+            $insertColumns = $baseColumns;
+            if (in_array('codigo_empresa', $columns, true)) {
+                $insertColumns[] = 'codigo_empresa';
+            }
+            if (in_array('codigo_finca', $columns, true)) {
+                $insertColumns[] = 'codigo_finca';
+            }
+
+            $placeholders = array_map(function ($column) {
+                return $column === 'fecha_creacion' ? 'NOW()' : ':' . $column;
+            }, $insertColumns);
+
+            $sql = "INSERT INTO reporte (" . implode(', ', $insertColumns) . ")
+                    VALUES (" . implode(', ', $placeholders) . ")";
 
             $st = $this->pdo->prepare($sql);
-            return $st->execute([
+            $params = [
                 ':codigo'        => trim($d['codigo'] ?? ''),
                 ':nombre'        => $d['nombre'] ?? null,
                 ':tipo_reporte'  => $d['tipo_reporte'] ?? null,
@@ -53,7 +79,16 @@ class Reporte
                 ':codigo_sensor' => $d['codigo_sensor'] ?? null,
                 ':codigo_cuarto' => $d['codigo_cuarto'] ?? null,
                 ':ubicacion'     => $d['ubicacion'] ?? 'exterior'
-            ]);
+            ];
+
+            if (in_array('codigo_empresa', $insertColumns, true)) {
+                $params[':codigo_empresa'] = $d['codigo_empresa'] ?? null;
+            }
+            if (in_array('codigo_finca', $insertColumns, true)) {
+                $params[':codigo_finca'] = $d['codigo_finca'] ?? null;
+            }
+
+            return $st->execute($params);
         } catch (PDOException $e) {
             error_log("Reporte crear: " . $e->getMessage());
             return false;

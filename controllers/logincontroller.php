@@ -50,14 +50,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 3. Si encontramos un usuario válido
         if ($usuario) {
-            $_SESSION['user'] = [
+            // Preparar datos de sesión con aislamiento por empresa y finca
+            $sessionData = [
                 'id'    => $usuario['id'],
+                'codigo' => $usuario['codigo'] ?? null,
                 'nombre'=> $usuario['nombre'],
                 'email' => $usuario['email'],
+                'tipo'  => $tipo, // 'superusuario' o 'usuario'
                 'rol'   => $tipo === 'superusuario' 
                             ? 'superusuario' 
                             : $usuario['codigo_rol'], // en usuario viene de la FK rol
             ];
+
+            // Para usuarios normales: agregar empresa y finca
+            if ($tipo === 'usuario') {
+                // El usuario ya debe tener codigo_empresa después de la migración
+                $sessionData['codigo_empresa'] = $usuario['codigo_empresa'] ?? null;
+                $sessionData['codigo_finca'] = $usuario['codigo_finca'] ?? null;
+
+                // VALIDAR que el usuario tenga empresa y finca válidas
+                if (empty($sessionData['codigo_empresa']) || empty($sessionData['codigo_finca'])) {
+                    $_SESSION['error'] = "La cuenta del usuario no está completamente configurada (falta empresa o finca).";
+                    header("Location: ../views/login.php");
+                    exit;
+                }
+            } else {
+                // Para superusuarios: pueden acceder a cualquier empresa/finca
+                $sessionData['codigo_empresa'] = null;
+                $sessionData['codigo_finca'] = null;
+            }
+
+            $_SESSION['user'] = $sessionData;
+
+            // Log de auditoría
+            error_log("Login exitoso - Usuario: " . $usuario['email'] . " - Tipo: " . $tipo . " - IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'desconocida'));
 
             // Redirección según tipo
             if ($tipo === 'superusuario') {

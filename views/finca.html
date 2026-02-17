@@ -55,6 +55,35 @@
       </button>
     </div>
 
+    <!-- Filtros -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-auto">
+            <label class="form-label mb-0 fw-semibold"><i class="bi bi-funnel me-1"></i>Filtrar por estado:</label>
+          </div>
+          <div class="col-auto">
+            <div class="btn-group" role="group" id="filtroEstado">
+              <input type="radio" class="btn-check" name="estadoFinca" id="radioActivasFinca" value="activo" checked>
+              <label class="btn btn-outline-success" for="radioActivasFinca">
+                <i class="bi bi-check-circle me-1"></i>Activas
+              </label>
+              
+              <input type="radio" class="btn-check" name="estadoFinca" id="radioInactivasFinca" value="inactivo">
+              <label class="btn btn-outline-danger" for="radioInactivasFinca">
+                <i class="bi bi-x-circle me-1"></i>Inactivas
+              </label>
+              
+              <input type="radio" class="btn-check" name="estadoFinca" id="radioTodasFinca" value="todas">
+              <label class="btn btn-outline-primary" for="radioTodasFinca">
+                <i class="bi bi-list me-1"></i>Todas
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla de fincas -->
     <div class="card shadow-sm border-0">
       <div class="card-body">
@@ -135,6 +164,55 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ver detalles finca -->
+  <div class="modal fade" id="modalVerFinca" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title">
+            <i class="bi bi-eye me-2"></i>Detalles de la Finca
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold text-muted small">Código:</label>
+              <p class="form-control-plaintext" id="verCodigoFinca">-</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold text-muted small">Nombre:</label>
+              <p class="form-control-plaintext" id="verNombreFinca">-</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold text-muted small">Teléfono:</label>
+              <p class="form-control-plaintext" id="verTelefonoFinca">-</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold text-muted small">Dirección:</label>
+              <p class="form-control-plaintext" id="verDireccionFinca">-</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold text-muted small">Empresa:</label>
+              <p class="form-control-plaintext" id="verEmpresaFinca">-</p>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold text-muted small">Estado:</label>
+              <p class="form-control-plaintext" id="verEstadoFinca">
+                <span class="badge">-</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>

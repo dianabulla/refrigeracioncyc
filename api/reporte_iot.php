@@ -90,7 +90,9 @@ try {
         'humedad' => isset($data['humedad']) ? floatval($data['humedad']) : null,
         'codigo_sensor' => $codigo_sensor,
         'codigo_cuarto' => $sensor['codigo_cuarto'], // Asignar desde la BD según el sensor
-        'ubicacion' => $sensor['ubicacion'] ?? 'exterior' // Asignar ubicacion desde el sensor
+        'ubicacion' => $sensor['ubicacion'] ?? 'exterior', // Asignar ubicacion desde el sensor
+        'codigo_empresa' => $sensor['codigo_empresa'] ?? null,
+        'codigo_finca' => $sensor['codigo_finca'] ?? null
       ];
       
       // Insertar reporte

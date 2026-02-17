@@ -3,14 +3,15 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/session_security.php';
 require_once __DIR__ . '/../models/empresa.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Solo superusuario gestiona empresas
-requireAuth('superusuario');
+// Verificar autenticación
+requireAuth();
 
 $pdo = Database::connect();
 $empresaModel = new Empresa($pdo);
@@ -29,7 +30,23 @@ try {
 
     // ------------------ GET ------------------
     if ($method === 'GET') {
+        requirePermiso('ver_empresas');
+        
         $codigo = $_GET['codigo'] ?? null;
+
+        if (!isSuperusuario()) {
+            $empresaUsuario = getUserEmpresa();
+            if (!$empresaUsuario) {
+                respond(['error' => 'Usuario sin empresa asignada'], 403);
+            }
+
+            if ($codigo && $codigo !== $empresaUsuario) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+
+            $row = $empresaModel->obtenerPorCodigo($empresaUsuario);
+            $row ? respond([$row]) : respond(['error' => 'Empresa no encontrada'], 404);
+        }
 
         if ($codigo) {
             $row = $empresaModel->obtenerPorCodigo($codigo);
@@ -44,6 +61,8 @@ try {
 
     // ------------------ POST ------------------
     if ($method === 'POST') {
+        requirePermiso('crear_empresas');
+        
         $data = json_decode(file_get_contents('php://input'), true);
         if (!is_array($data) || empty($data)) {
             // fallback por si viene como form-data
@@ -61,6 +80,8 @@ try {
 
     // ------------------ PUT ------------------
     if ($method === 'PUT') {
+        requirePermiso('editar_empresas');
+        
         // Como ya lo tenías: parse_str del cuerpo
         parse_str(file_get_contents('php://input'), $put);
         $codigo = $put['codigo'] ?? null;
@@ -77,6 +98,8 @@ try {
 
     // ------------------ DELETE ------------------
     if ($method === 'DELETE') {
+        requirePermiso('eliminar_empresas');
+        
         $codigo = $_GET['codigo'] ?? null;
         if (!$codigo) {
             respond(['error' => 'codigo requerido'], 422);

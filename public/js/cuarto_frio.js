@@ -7,29 +7,65 @@ function crearFilaCuarto(item) {
   tr.dataset.id = item.id;
   tr.dataset.codigo = item.codigo || "";
 
-  tr.innerHTML = `
-    <td class="d-none d-md-table-cell">${item.id ?? "-"}</td>
-    <td>${item.codigo || "-"}</td>
-    <td>${item.nombre || "-"}</td>
-    <td class="d-none d-md-table-cell">${item.codigo_finca || "-"}</td>
-    <td>${item.activo === 1 ? "Activo" : "Inactivo"}</td>
-    <td style="width:100px;">
-      <button class="btn btn-sm btn-outline-primary me-1"
-              onclick="editarCuarto('${item.codigo}')">
-        <i class="bi bi-pencil"></i>
-      </button>
-      <button class="btn btn-sm btn-outline-danger"
-              onclick="eliminarCuarto('${item.codigo}')">
-        <i class="bi bi-trash"></i>
-      </button>
-    </td>
-  `;
+  // Columna ID (oculta en móvil)
+  const tdId = document.createElement("td");
+  tdId.className = "d-none d-md-table-cell";
+  tdId.textContent = item.id ?? "-";
+  tr.appendChild(tdId);
+
+  // Columna Código
+  const tdCodigo = document.createElement("td");
+  tdCodigo.textContent = item.codigo || "-";
+  tr.appendChild(tdCodigo);
+
+  // Columna Nombre
+  const tdNombre = document.createElement("td");
+  tdNombre.textContent = item.nombre || "-";
+  tr.appendChild(tdNombre);
+
+  // Columna Finca (oculta en móvil)
+  const tdFinca = document.createElement("td");
+  tdFinca.className = "d-none d-md-table-cell";
+  tdFinca.textContent = item.codigo_finca || "-";
+  tr.appendChild(tdFinca);
+
+  // Columna Estado
+  const tdEstado = document.createElement("td");
+  tdEstado.textContent = Number(item.activo) === 1 ? "Activo" : "Inactivo";
+  tr.appendChild(tdEstado);
+
+  // Columna Acciones
+  const tdAcciones = document.createElement("td");
+  tdAcciones.style.width = "120px";
+
+  // Botón Ver
+  const btnVer = document.createElement("button");
+  btnVer.className = "btn btn-sm btn-outline-info me-1";
+  btnVer.innerHTML = '<i class="bi bi-eye"></i>';
+  btnVer.onclick = function() { verDetallesCuarto(item.codigo); };
+  tdAcciones.appendChild(btnVer);
+
+  // Botón Editar
+  const btnEditar = document.createElement("button");
+  btnEditar.className = "btn btn-sm btn-outline-primary me-1";
+  btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+  btnEditar.onclick = function() { editarCuarto(item.codigo); };
+  tdAcciones.appendChild(btnEditar);
+
+  // Botón Eliminar
+  const btnEliminar = document.createElement("button");
+  btnEliminar.className = "btn btn-sm btn-outline-danger";
+  btnEliminar.innerHTML = '<i class="bi bi-trash"></i>';
+  btnEliminar.onclick = function() { eliminarCuarto(item.codigo); };
+  tdAcciones.appendChild(btnEliminar);
+
+  tr.appendChild(tdAcciones);
 
   return tr;
 }
 
-/** 🟢 Cargar cuartos fríos */
-async function cargarCuartos() {
+/** 🟢 Cargar cuartos fríos con filtro */
+async function cargarCuartos(filtroEstado = "activo") {
   try {
     const res = await fetch(API_URL_CUARTOS);
     const data = await res.json();
@@ -39,9 +75,18 @@ async function cargarCuartos() {
       return;
     }
 
+    // Aplicar filtro
+    let dataFiltrada = data;
+    if (filtroEstado === "activo") {
+      dataFiltrada = data.filter(item => Number(item.activo) === 1);
+    } else if (filtroEstado === "inactivo") {
+      dataFiltrada = data.filter(item => Number(item.activo) === 0);
+    }
+    // Si es "todas" no se filtra
+
     const tbody = document.getElementById("tablaCuartos");
     tbody.innerHTML = "";
-    data.forEach((item) => tbody.appendChild(crearFilaCuarto(item)));
+    dataFiltrada.forEach((item) => tbody.appendChild(crearFilaCuarto(item)));
   } catch (e) {
     console.error("Error al cargar cuartos fríos:", e);
   }
@@ -156,6 +201,34 @@ async function eliminarCuarto(codigo) {
   }
 }
 
+/** Ver detalles del cuarto en modal de solo lectura */
+async function verDetallesCuarto(codigo) {
+  try {
+    const res = await fetch(
+      `${API_URL_CUARTOS}?codigo=${encodeURIComponent(codigo)}`
+    );
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      alert(data.error || "No se pudo obtener el cuarto frío");
+      return;
+    }
+
+    // Llenar modal de visualización
+    document.getElementById("verCodigoCuarto").value = data.codigo || "";
+    document.getElementById("verNombreCuarto").value = data.nombre || "";
+    document.getElementById("verFincaCuarto").value = data.codigo_finca || "";
+    document.getElementById("verEstadoCuarto").value = Number(data.activo) === 1 ? "Activo" : "Inactivo";
+
+    const modalEl = document.getElementById("modalVerCuarto");
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  } catch (e) {
+    console.error("Error al cargar cuarto frío:", e);
+    alert("Error al cargar datos del cuarto frío");
+  }
+}
+
 /** Editar cuarto: traer datos y abrir modal */
 async function editarCuarto(codigo) {
   try {
@@ -183,8 +256,32 @@ async function editarCuarto(codigo) {
 
 /** Inicialización */
 document.addEventListener("DOMContentLoaded", () => {
-  cargarCuartos();
+  // Cargar con filtro activo por defecto
+  cargarCuartos("activo");
   cargarFincasSelect();
+
+  // Event listeners para filtros
+  const radioActivos = document.getElementById("radioActivosCuarto");
+  const radioInactivos = document.getElementById("radioInactivosCuarto");
+  const radioTodos = document.getElementById("radioTodosCuarto");
+
+  if (radioActivos) {
+    radioActivos.addEventListener("change", () => {
+      if (radioActivos.checked) cargarCuartos("activo");
+    });
+  }
+
+  if (radioInactivos) {
+    radioInactivos.addEventListener("change", () => {
+      if (radioInactivos.checked) cargarCuartos("inactivo");
+    });
+  }
+
+  if (radioTodos) {
+    radioTodos.addEventListener("change", () => {
+      if (radioTodos.checked) cargarCuartos("todas");
+    });
+  }
 
   const form = document.getElementById("formCuarto");
   const btnGuardar = document.getElementById("btnGuardarCuarto");

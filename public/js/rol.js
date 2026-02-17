@@ -1,7 +1,31 @@
 const API_URL = "../api/rol.php";
 
 document.addEventListener("DOMContentLoaded", () => {
-    cargarRoles();
+    // Cargar con filtro activo por defecto
+    cargarRoles("activo");
+    
+    // Event listeners para filtros
+    const radioActivos = document.getElementById("radioActivosRol");
+    const radioInactivos = document.getElementById("radioInactivosRol");
+    const radioTodos = document.getElementById("radioTodosRol");
+
+    if (radioActivos) {
+        radioActivos.addEventListener("change", () => {
+            if (radioActivos.checked) cargarRoles("activo");
+        });
+    }
+
+    if (radioInactivos) {
+        radioInactivos.addEventListener("change", () => {
+            if (radioInactivos.checked) cargarRoles("inactivo");
+        });
+    }
+
+    if (radioTodos) {
+        radioTodos.addEventListener("change", () => {
+            if (radioTodos.checked) cargarRoles("todas");
+        });
+    }
     
     // Limpiar formulario al abrir modal para crear nuevo rol
     document.getElementById("modalRol").addEventListener("show.bs.modal", (e) => {
@@ -31,34 +55,115 @@ function limpiarFormulario() {
 }
 
 // -----------------------------------------
-// LISTAR
+// LISTAR CON FILTRO
 // -----------------------------------------
-async function cargarRoles() {
+async function cargarRoles(filtroEstado = "activo") {
     const res = await fetch(API_URL);
     const data = await res.json();
+
+    // Aplicar filtro
+    let dataFiltrada = data;
+    if (filtroEstado === "activo") {
+        dataFiltrada = data.filter(r => Number(r.activo) === 1);
+    } else if (filtroEstado === "inactivo") {
+        dataFiltrada = data.filter(r => Number(r.activo) === 0);
+    }
+    // Si es "todas" no se filtra
 
     const tbody = document.getElementById("tablaRoles");
     tbody.innerHTML = "";
 
-    data.forEach(r => {
+    dataFiltrada.forEach(r => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${r.codigo}</td>
-            <td>${r.nombre}</td>
-            <td class="d-none d-md-table-cell">${r.descripcion ?? "-"}</td>
-            <td>${r.activo === 1 ? "Activo" : "Inactivo"}</td>
-
-            <td class="text-center">
-                <button class="btn btn-warning btn-sm" onclick="editarRol('${r.codigo}')">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="eliminarRol('${r.codigo}')">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+        
+        // Columna Código
+        const tdCodigo = document.createElement("td");
+        tdCodigo.textContent = r.codigo;
+        tr.appendChild(tdCodigo);
+        
+        // Columna Nombre
+        const tdNombre = document.createElement("td");
+        tdNombre.textContent = r.nombre;
+        tr.appendChild(tdNombre);
+        
+        // Columna Descripción (oculta en móvil)
+        const tdDesc = document.createElement("td");
+        tdDesc.className = "d-none d-md-table-cell";
+        tdDesc.textContent = r.descripcion ?? "-";
+        tr.appendChild(tdDesc);
+        
+        // Columna Estado
+        const tdEstado = document.createElement("td");
+        tdEstado.textContent = Number(r.activo) === 1 ? "Activo" : "Inactivo";
+        tr.appendChild(tdEstado);
+        
+        // Columna Opciones
+        const tdOpciones = document.createElement("td");
+        tdOpciones.className = "text-center";
+        
+        // Botón Ver
+        const btnVer = document.createElement("button");
+        btnVer.className = "btn btn-info btn-sm me-1";
+        btnVer.innerHTML = '<i class="bi bi-eye"></i>';
+        btnVer.onclick = function() { verDetallesRol(r.codigo); };
+        tdOpciones.appendChild(btnVer);
+        
+        // Botón Editar
+        const btnEditar = document.createElement("button");
+        btnEditar.className = "btn btn-warning btn-sm me-1";
+        btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+        btnEditar.onclick = function() { editarRol(r.codigo); };
+        tdOpciones.appendChild(btnEditar);
+        
+        // Botón Eliminar
+        const btnEliminar = document.createElement("button");
+        btnEliminar.className = "btn btn-danger btn-sm";
+        btnEliminar.innerHTML = '<i class="bi bi-trash"></i>';
+        btnEliminar.onclick = function() { eliminarRol(r.codigo); };
+        tdOpciones.appendChild(btnEliminar);
+        
+        tr.appendChild(tdOpciones);
         tbody.appendChild(tr);
     });
+}
+
+// -----------------------------------------
+// VER DETALLES DEL ROL
+// -----------------------------------------
+async function verDetallesRol(codigo) {
+    const res = await fetch(`${API_URL}?codigo=${codigo}`);
+    const r = await res.json();
+
+    document.getElementById("verCodigoRol").value = r.codigo;
+    document.getElementById("verNombreRol").value = r.nombre;
+    document.getElementById("verDescripcionRol").value = r.descripcion ?? "";
+    document.getElementById("verEstadoRol").value = Number(r.activo) === 1 ? "Activo" : "Inactivo";
+
+    // Mostrar permisos
+    let permisosTexto = "Ninguno";
+    if (r.permisos) {
+        let permisos = {};
+        if (typeof r.permisos === 'string') {
+            try {
+                permisos = JSON.parse(r.permisos);
+            } catch (e) {
+                console.error('Error parseando permisos:', e);
+            }
+        } else if (typeof r.permisos === 'object') {
+            permisos = r.permisos;
+        }
+        
+        const permisosActivos = Object.keys(permisos).filter(p => permisos[p] === true);
+        if (permisosActivos.length > 0) {
+            permisosTexto = permisosActivos.join(', ');
+        }
+    }
+    
+    document.getElementById("verPermisosRol").value = permisosTexto;
+
+    const modalEl = document.getElementById("modalVerRol");
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
 }
 
 // -----------------------------------------
@@ -77,7 +182,7 @@ async function crearRol() {
     if (!j.ok) return alert(j.error);
 
     bootstrap.Modal.getInstance(document.getElementById("modalRol")).hide();
-    cargarRoles();
+    cargarRoles("activo");
 }
 
 // -----------------------------------------
@@ -143,7 +248,7 @@ async function actualizarRol(codigo) {
     if (!j.ok) return alert(j.error);
 
     bootstrap.Modal.getInstance(document.getElementById("modalRol")).hide();
-    cargarRoles();
+    cargarRoles("activo");
 }
 
 // -----------------------------------------
@@ -157,7 +262,7 @@ async function eliminarRol(codigo) {
 
     if (!j.ok) return alert(j.error);
 
-    cargarRoles();
+    cargarRoles("activo");
 }
 
 // -----------------------------------------
@@ -174,6 +279,7 @@ function tomarDatos() {
         'ver_cuartos', 'crear_cuartos', 'editar_cuartos', 'eliminar_cuartos',
         'ver_sensores', 'crear_sensores', 'editar_sensores', 'eliminar_sensores',
         'ver_componentes', 'crear_componentes', 'editar_componentes', 'eliminar_componentes',
+        'ver_refrigerantes', 'crear_refrigerantes', 'editar_refrigerantes', 'eliminar_refrigerantes',
         'ver_mantenimientos', 'crear_mantenimientos', 'editar_mantenimientos', 'eliminar_mantenimientos',
         'ver_reportes', 'exportar_reportes'
     ];

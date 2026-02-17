@@ -12,42 +12,113 @@ function crearFilaSensor(item) {
 
   // Colores específicos para cada ubicación
   const coloresUbicacion = {
-    'exterior': 'bg-info',        // Azul claro
-    'interior': 'bg-primary',     // Azul oscuro
-    'tuberia': 'bg-green-fresh',  // Verde pastel
-    'otro': 'bg-gray-light'       // Gris claro
+    'exterior': 'bg-info',
+    'interior': 'bg-primary',
+    'tuberia': 'bg-success',
+    'otro': 'bg-secondary'
   };
   
   const badgeColor = coloresUbicacion[item.ubicacion] || 'bg-info';
 
-  tr.innerHTML = `
-    <td class="d-none d-md-table-cell">${item.id ?? "-"}</td>
-    <td>${item.codigo || "-"}</td>
-    <td>${item.nombre || "-"}</td>
-    <td>${item.tipo || "-"}</td>
-    <td class="d-none d-lg-table-cell">${item.modelo || "-"}</td>
-    <td><span class="badge ${badgeColor}">${item.ubicacion || "exterior"}</span></td>
-    <td class="d-none d-lg-table-cell">${fechaInst || "-"}</td>
-    <td class="d-none d-xl-table-cell">${fechaVerif || "-"}</td>
-    <td class="d-none d-md-table-cell">${item.valor_actual || "-"}</td>
-    <td class="d-none d-md-table-cell">${item.codigo_cuarto || "-"}</td>
-    <td>${item.activo == 1 ? '<span class="badge bg-success">Act.</span>' : '<span class="badge bg-danger">Inact.</span>'}</td>
-    <td style="width:100px;">
-      <button class="btn btn-sm btn-outline-primary me-1"
-              onclick="editarSensor('${item.codigo}')">
-        <i class="bi bi-pencil"></i>
-      </button>
-      <button class="btn btn-sm btn-outline-danger"
-              onclick="eliminarSensor('${item.codigo}')">
-        <i class="bi bi-trash"></i>
-      </button>
-    </td>
-  `;
+  // Columna ID (oculta en móvil)
+  const tdId = document.createElement("td");
+  tdId.className = "d-none d-md-table-cell";
+  tdId.textContent = item.id ?? "-";
+  tr.appendChild(tdId);
+
+  // Columna Código
+  const tdCodigo = document.createElement("td");
+  tdCodigo.textContent = item.codigo || "-";
+  tr.appendChild(tdCodigo);
+
+  // Columna Nombre
+  const tdNombre = document.createElement("td");
+  tdNombre.textContent = item.nombre || "-";
+  tr.appendChild(tdNombre);
+
+  // Columna Tipo
+  const tdTipo = document.createElement("td");
+  tdTipo.textContent = item.tipo || "-";
+  tr.appendChild(tdTipo);
+
+  // Columna Modelo (oculta en pantallas pequeñas)
+  const tdModelo = document.createElement("td");
+  tdModelo.className = "d-none d-lg-table-cell";
+  tdModelo.textContent = item.modelo || "-";
+  tr.appendChild(tdModelo);
+
+  // Columna Ubicación
+  const tdUbicacion = document.createElement("td");
+  const spanUbicacion = document.createElement("span");
+  spanUbicacion.className = `badge ${badgeColor}`;
+  spanUbicacion.textContent = item.ubicacion || "exterior";
+  tdUbicacion.appendChild(spanUbicacion);
+  tr.appendChild(tdUbicacion);
+
+  // Columna Fecha Instalación (oculta en pantallas pequeñas)
+  const tdFechaInst = document.createElement("td");
+  tdFechaInst.className = "d-none d-lg-table-cell";
+  tdFechaInst.textContent = fechaInst || "-";
+  tr.appendChild(tdFechaInst);
+
+  // Columna Fecha Verificación (oculta en pantallas muy pequeñas)
+  const tdFechaVerif = document.createElement("td");
+  tdFechaVerif.className = "d-none d-xl-table-cell";
+  tdFechaVerif.textContent = fechaVerif || "-";
+  tr.appendChild(tdFechaVerif);
+
+  // Columna Valor Actual (oculta en móvil)
+  const tdValor = document.createElement("td");
+  tdValor.className = "d-none d-md-table-cell";
+  tdValor.textContent = item.valor_actual || "-";
+  tr.appendChild(tdValor);
+
+  // Columna Cuarto (oculta en móvil)
+  const tdCuarto = document.createElement("td");
+  tdCuarto.className = "d-none d-md-table-cell";
+  tdCuarto.textContent = item.codigo_cuarto || "-";
+  tr.appendChild(tdCuarto);
+
+  // Columna Estado
+  const tdEstado = document.createElement("td");
+  const spanEstado = document.createElement("span");
+  spanEstado.className = Number(item.activo) === 1 ? "badge bg-success" : "badge bg-danger";
+  spanEstado.textContent = Number(item.activo) === 1 ? "Act." : "Inact.";
+  tdEstado.appendChild(spanEstado);
+  tr.appendChild(tdEstado);
+
+  // Columna Acciones
+  const tdAcciones = document.createElement("td");
+  tdAcciones.style.width = "120px";
+
+  // Botón Ver
+  const btnVer = document.createElement("button");
+  btnVer.className = "btn btn-sm btn-outline-info me-1";
+  btnVer.innerHTML = '<i class="bi bi-eye"></i>';
+  btnVer.onclick = function() { verDetallesSensor(item.codigo); };
+  tdAcciones.appendChild(btnVer);
+
+  // Botón Editar
+  const btnEditar = document.createElement("button");
+  btnEditar.className = "btn btn-sm btn-outline-primary me-1";
+  btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+  btnEditar.onclick = function() { editarSensor(item.codigo); };
+  tdAcciones.appendChild(btnEditar);
+
+  // Botón Eliminar
+  const btnEliminar = document.createElement("button");
+  btnEliminar.className = "btn btn-sm btn-outline-danger";
+  btnEliminar.innerHTML = '<i class="bi bi-trash"></i>';
+  btnEliminar.onclick = function() { eliminarSensor(item.codigo); };
+  tdAcciones.appendChild(btnEliminar);
+
+  tr.appendChild(tdAcciones);
+
   return tr;
 }
 
-/** 🟢 Cargar sensores */
-async function cargarSensores() {
+/** 🟢 Cargar sensores con filtro */
+async function cargarSensores(filtroEstado = "activo") {
   try {
     const res = await fetch(API_URL_SENSORES);
     const data = await res.json();
@@ -57,9 +128,18 @@ async function cargarSensores() {
       return;
     }
 
+    // Aplicar filtro
+    let dataFiltrada = data;
+    if (filtroEstado === "activo") {
+      dataFiltrada = data.filter(item => Number(item.activo) === 1);
+    } else if (filtroEstado === "inactivo") {
+      dataFiltrada = data.filter(item => Number(item.activo) === 0);
+    }
+    // Si es "todas" no se filtra
+
     const tbody = document.getElementById("tablaSensores");
     tbody.innerHTML = "";
-    data.forEach((item) => tbody.appendChild(crearFilaSensor(item)));
+    dataFiltrada.forEach((item) => tbody.appendChild(crearFilaSensor(item)));
   } catch (e) {
     console.error("Error al cargar sensores:", e);
   }
@@ -183,6 +263,39 @@ async function eliminarSensor(codigo) {
   }
 }
 
+/** Ver detalles del sensor en modal de solo lectura */
+async function verDetallesSensor(codigo) {
+  try {
+    const res = await fetch(
+      `${API_URL_SENSORES}?codigo=${encodeURIComponent(codigo)}`
+    );
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      alert(data.error || "No se pudo obtener el sensor");
+      return;
+    }
+
+    // Llenar modal de visualización
+    document.getElementById("verCodigoSensor").value = data.codigo || "";
+    document.getElementById("verNombreSensor").value = data.nombre || "";
+    document.getElementById("verTipoSensor").value = data.tipo || "";
+    document.getElementById("verModeloSensor").value = data.modelo || "";
+    document.getElementById("verUbicacionSensor").value = data.ubicacion || "";
+    document.getElementById("verCuartoSensor").value = data.codigo_cuarto || "";
+    document.getElementById("verFechaInstalacionSensor").value = data.fecha_instalacion ? data.fecha_instalacion.substring(0, 10) : "";
+    document.getElementById("verFechaVerificacionSensor").value = data.fecha_verificacion ? data.fecha_verificacion.substring(0, 10) : "";
+    document.getElementById("verValorActualSensor").value = data.valor_actual || "";
+    document.getElementById("verEstadoSensor").value = Number(data.activo) === 1 ? "Activo" : "Inactivo";
+
+    const modalEl = document.getElementById("modalVerSensor");
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  } catch (e) {
+    console.error("Error al cargar sensor:", e);
+    alert("Error al cargar datos del sensor");
+  }
+}
+
 /** Editar sensor: traer datos y abrir modal */
 async function editarSensor(codigo) {
   try {
@@ -209,8 +322,32 @@ async function editarSensor(codigo) {
 
 /** Inicialización */
 document.addEventListener("DOMContentLoaded", () => {
-  cargarSensores();
+  // Cargar con filtro activo por defecto
+  cargarSensores("activo");
   cargarCuartosSelect();
+
+  // Event listeners para filtros
+  const radioActivos = document.getElementById("radioActivosSensor");
+  const radioInactivos = document.getElementById("radioInactivosSensor");
+  const radioTodos = document.getElementById("radioTodosSensor");
+
+  if (radioActivos) {
+    radioActivos.addEventListener("change", () => {
+      if (radioActivos.checked) cargarSensores("activo");
+    });
+  }
+
+  if (radioInactivos) {
+    radioInactivos.addEventListener("change", () => {
+      if (radioInactivos.checked) cargarSensores("inactivo");
+    });
+  }
+
+  if (radioTodos) {
+    radioTodos.addEventListener("change", () => {
+      if (radioTodos.checked) cargarSensores("todas");
+    });
+  }
 
   const form = document.getElementById("formSensor");
   const btnGuardar = document.getElementById("btnGuardarSensor");

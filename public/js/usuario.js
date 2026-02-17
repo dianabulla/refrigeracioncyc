@@ -1,11 +1,38 @@
 const API_USUARIOS = "../api/usuario.php";
 const API_FINCAS   = "../api/finca.php";
 const API_ROLES    = "../api/rol.php";
+const API_EMPRESAS = "../api/empresa.php";
 
-let rolesMap  = {};
-let fincasMap = {};
+let rolesMap    = {};
+let fincasMap   = {};
+let empresasMap = {};
+let fincasData  = []; // Para filtrar por empresa
 
 // ================== CARGAR LISTAS AUXILIARES ==================
+
+async function cargarEmpresasSelect() {
+  try {
+    const res = await fetch(API_EMPRESAS);
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+
+    const sel = document.getElementById("codigo_empresa");
+    sel.innerHTML = `<option value="">(Sin empresa)</option>`;
+
+    data.forEach(e => {
+      empresasMap[e.codigo] = e.nombre;
+      const opt = document.createElement("option");
+      opt.value = e.codigo;
+      opt.textContent = e.nombre;
+      sel.appendChild(opt);
+    });
+    
+    // Evento para filtrar fincas al cambiar empresa
+    sel.addEventListener("change", filtrarFincasPorEmpresa);
+  } catch (e) {
+    console.error("Error al cargar empresas:", e);
+  }
+}
 
 async function cargarRolesSelect() {
   try {
@@ -34,24 +61,42 @@ async function cargarFincasSelect() {
     const data = await res.json();
     if (!Array.isArray(data)) return;
 
-    const sel = document.getElementById("codigo_finca");
-    sel.innerHTML = `<option value="">(Sin finca)</option>`;
-
+    fincasData = data; // Guardar para filtrar
+    
     data.forEach(f => {
       fincasMap[f.codigo] = f.nombre;
-      const opt = document.createElement("option");
-      opt.value = f.codigo;
-      opt.textContent = f.nombre;
-      sel.appendChild(opt);
     });
+    
+    actualizarSelectFincas();
   } catch (e) {
-    // Error silencioso
+    console.error("Error al cargar fincas:", e);
   }
 }
 
-// ================== LISTAR USUARIOS ==================
+function actualizarSelectFincas(codigoEmpresa = null) {
+  const sel = document.getElementById("codigo_finca");
+  sel.innerHTML = `<option value="">(Sin finca - ver todas)</option>`;
+  
+  const fincasFiltradas = codigoEmpresa 
+    ? fincasData.filter(f => f.codigo_empresa === codigoEmpresa)
+    : fincasData;
+  
+  fincasFiltradas.forEach(f => {
+    const opt = document.createElement("option");
+    opt.value = f.codigo;
+    opt.textContent = f.nombre;
+    sel.appendChild(opt);
+  });
+}
 
-async function cargarUsuarios() {
+function filtrarFincasPorEmpresa() {
+  const empresaSel = document.getElementById("codigo_empresa").value;
+  actualizarSelectFincas(empresaSel || null);
+}
+
+// ================== LISTAR USUARIOS CON FILTRO ==================
+
+async function cargarUsuarios(filtroEstado = "activo") {
   try {
     const res  = await fetch(API_USUARIOS);
     const data = await res.json();
@@ -61,34 +106,99 @@ async function cargarUsuarios() {
       return;
     }
 
+    // Aplicar filtro
+    let dataFiltrada = data;
+    if (filtroEstado === "activo") {
+      dataFiltrada = data.filter(u => Number(u.activo) === 1);
+    } else if (filtroEstado === "inactivo") {
+      dataFiltrada = data.filter(u => Number(u.activo) === 0);
+    }
+    // Si es "todas" no se filtra
+
     const tbody = document.getElementById("tablaUsuarios");
     tbody.innerHTML = "";
 
-    data.forEach(u => {
+    dataFiltrada.forEach(u => {
       const tr = document.createElement("tr");
       tr.dataset.id     = u.id;
       tr.dataset.codigo = u.codigo || "";
 
       const nombreRol  = rolesMap[u.codigo_rol]  || u.codigo_rol  || "-";
+      const nombreEmp  = empresasMap[u.codigo_empresa] || u.codigo_empresa || "-";
       const nombreFinc = fincasMap[u.codigo_finca] || u.codigo_finca || "-";
 
-      tr.innerHTML = `
-        <td class="d-none d-md-table-cell">${u.id ?? "-"}</td>
-        <td class="d-none d-lg-table-cell">${u.codigo || "-"}</td>
-        <td>${u.nombre || "-"}</td>
-        <td class="d-none d-lg-table-cell">${u.email || "-"}</td>
-        <td>${nombreRol}</td>
-        <td class="d-none d-md-table-cell">${nombreFinc}</td>
-        <td>${u.activo ? "Activo" : "Inactivo"}</td>
-        <td class="text-end" style="width:100px;">
-          <button class="btn btn-sm btn-warning me-1" onclick="editarUsuario(${u.id})">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${u.id})">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      `;
+      // Columna ID (oculta en móvil)
+      const tdId = document.createElement("td");
+      tdId.className = "d-none d-md-table-cell";
+      tdId.textContent = u.id ?? "-";
+      tr.appendChild(tdId);
+
+      // Columna Código (oculta en pantallas pequeñas)
+      const tdCodigo = document.createElement("td");
+      tdCodigo.className = "d-none d-lg-table-cell";
+      tdCodigo.textContent = u.codigo || "-";
+      tr.appendChild(tdCodigo);
+
+      // Columna Nombre
+      const tdNombre = document.createElement("td");
+      tdNombre.textContent = u.nombre || "-";
+      tr.appendChild(tdNombre);
+
+      // Columna Email (oculta en pantallas pequeñas)
+      const tdEmail = document.createElement("td");
+      tdEmail.className = "d-none d-lg-table-cell";
+      tdEmail.textContent = u.email || "-";
+      tr.appendChild(tdEmail);
+
+      // Columna Rol
+      const tdRol = document.createElement("td");
+      tdRol.textContent = nombreRol;
+      tr.appendChild(tdRol);
+
+      // Columna Empresa (oculta en móvil)
+      const tdEmpresa = document.createElement("td");
+      tdEmpresa.className = "d-none d-md-table-cell";
+      tdEmpresa.textContent = nombreEmp;
+      tr.appendChild(tdEmpresa);
+
+      // Columna Finca (oculta en pantallas pequeñas)
+      const tdFinca = document.createElement("td");
+      tdFinca.className = "d-none d-lg-table-cell";
+      tdFinca.textContent = nombreFinc;
+      tr.appendChild(tdFinca);
+
+      // Columna Estado
+      const tdEstado = document.createElement("td");
+      tdEstado.textContent = Number(u.activo) === 1 ? "Activo" : "Inactivo";
+      tr.appendChild(tdEstado);
+
+      // Columna Acciones
+      const tdAcciones = document.createElement("td");
+      tdAcciones.className = "text-end";
+      tdAcciones.style.width = "120px";
+
+      // Botón Ver
+      const btnVer = document.createElement("button");
+      btnVer.className = "btn btn-sm btn-info me-1";
+      btnVer.innerHTML = '<i class="bi bi-eye"></i>';
+      btnVer.onclick = function() { verDetallesUsuario(u.id); };
+      tdAcciones.appendChild(btnVer);
+
+      // Botón Editar
+      const btnEditar = document.createElement("button");
+      btnEditar.className = "btn btn-sm btn-warning me-1";
+      btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+      btnEditar.onclick = function() { editarUsuario(u.id); };
+      tdAcciones.appendChild(btnEditar);
+
+      // Botón Eliminar
+      const btnEliminar = document.createElement("button");
+      btnEliminar.className = "btn btn-sm btn-danger";
+      btnEliminar.innerHTML = '<i class="bi bi-trash"></i>';
+      btnEliminar.onclick = function() { eliminarUsuario(u.id); };
+      tdAcciones.appendChild(btnEliminar);
+
+      tr.appendChild(tdAcciones);
       tbody.appendChild(tr);
     });
   } catch (e) {
@@ -97,6 +207,35 @@ async function cargarUsuarios() {
 }
 
 // ================== CREAR / EDITAR ==================
+
+async function verDetallesUsuario(id) {
+  try {
+    const res  = await fetch(`${API_USUARIOS}?id=${id}`);
+    const data = await res.json();
+    if (!res.ok) {
+      console.error("Error al obtener usuario:", data);
+      return;
+    }
+
+    const nombreRol  = rolesMap[data.codigo_rol]  || data.codigo_rol  || "-";
+    const nombreEmp  = empresasMap[data.codigo_empresa] || data.codigo_empresa || "-";
+    const nombreFinc = fincasMap[data.codigo_finca] || data.codigo_finca || "-";
+
+    document.getElementById("verCodigoUsuario").value = data.codigo || "";
+    document.getElementById("verNombreUsuario").value = data.nombre || "";
+    document.getElementById("verEmailUsuario").value = data.email || "";
+    document.getElementById("verRolUsuario").value = nombreRol;
+    document.getElementById("verEmpresaUsuario").value = nombreEmp;
+    document.getElementById("verFincaUsuario").value = nombreFinc;
+    document.getElementById("verEstadoUsuario").value = Number(data.activo) === 1 ? "Activo" : "Inactivo";
+
+    const modalEl = document.getElementById("modalVerUsuario");
+    const modal   = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  } catch (e) {
+    console.error("Error al ver usuario:", e);
+  }
+}
 
 async function editarUsuario(id) {
   const mensaje = document.getElementById("usuarioMensaje");
@@ -115,6 +254,11 @@ async function editarUsuario(id) {
     document.getElementById("email").value        = data.email  || "";
     document.getElementById("password").value     = "";
     document.getElementById("codigo_rol").value   = data.codigo_rol   || "";
+    document.getElementById("codigo_empresa").value = data.codigo_empresa || "";
+    
+    // Filtrar fincas según la empresa
+    actualizarSelectFincas(data.codigo_empresa || null);
+    
     document.getElementById("codigo_finca").value = data.codigo_finca || "";
     document.getElementById("activo").value       = data.activo ? "1" : "0";
 
@@ -149,7 +293,7 @@ async function eliminarUsuario(id) {
 
     if (res.ok && data.ok) {
       alert(data.message || "Usuario eliminado");
-      cargarUsuarios();
+      cargarUsuarios("activo");
     } else {
       alert(data.error || "No se pudo eliminar el usuario");
     }
@@ -168,8 +312,36 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!form) return;
 
   // Cargar combos y tabla
-  cargarRolesSelect().then(cargarUsuarios);
-  cargarFincasSelect();
+  Promise.all([
+    cargarEmpresasSelect(),
+    cargarRolesSelect(),
+    cargarFincasSelect()
+  ]).then(() => {
+    cargarUsuarios("activo");
+  });
+
+  // Event listeners para filtros
+  const radioActivos = document.getElementById("radioActivosUsuario");
+  const radioInactivos = document.getElementById("radioInactivosUsuario");
+  const radioTodos = document.getElementById("radioTodosUsuario");
+
+  if (radioActivos) {
+    radioActivos.addEventListener("change", () => {
+      if (radioActivos.checked) cargarUsuarios("activo");
+    });
+  }
+
+  if (radioInactivos) {
+    radioInactivos.addEventListener("change", () => {
+      if (radioInactivos.checked) cargarUsuarios("inactivo");
+    });
+  }
+
+  if (radioTodos) {
+    radioTodos.addEventListener("change", () => {
+      if (radioTodos.checked) cargarUsuarios("todas");
+    });
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -181,6 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
       email:        document.getElementById("email").value.trim(),
       password:     document.getElementById("password").value.trim(),
       codigo_rol:   document.getElementById("codigo_rol").value,
+      codigo_empresa: document.getElementById("codigo_empresa").value || null,
       codigo_finca: document.getElementById("codigo_finca").value || null,
       activo:       parseInt(document.getElementById("activo").value, 10),
     };
@@ -226,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const modal   = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.hide();
 
-        cargarUsuarios();
+        cargarUsuarios("activo");
       } else {
         if (msg) msg.textContent = data.error || "Error en la operación.";
         btn.disabled = false;

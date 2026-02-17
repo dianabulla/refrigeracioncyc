@@ -55,6 +55,27 @@
       </button>
     </div>
 
+    <!-- Filtros de estado -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3">
+          <label class="mb-0 fw-semibold text-muted">Filtrar por estado:</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoComponente" id="radioActivosComponente" value="activo" checked>
+            <label class="form-check-label" for="radioActivosComponente">Activos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoComponente" id="radioInactivosComponente" value="inactivo">
+            <label class="form-check-label" for="radioInactivosComponente">Inactivos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoComponente" id="radioTodosComponente" value="todas">
+            <label class="form-check-label" for="radioTodosComponente">Todos</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla -->
     <div class="card shadow-sm border-0">
       <div class="card-body">
@@ -129,6 +150,49 @@
             <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ver Componente -->
+  <div class="modal fade" id="modalVerComponente" tabindex="-1" aria-labelledby="modalVerComponenteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-info" id="modalVerComponenteLabel">
+            <i class="bi bi-eye me-2"></i>Detalle del Componente
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Código</label>
+            <input type="text" class="form-control" id="verCodigoComponente" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nombre</label>
+            <input type="text" class="form-control" id="verNombreComponente" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo</label>
+            <input type="text" class="form-control" id="verTipoComponente" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cuarto Frío</label>
+            <input type="text" class="form-control" id="verCuartoComponente" readonly>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción</label>
+            <textarea class="form-control" id="verDescripcionComponente" rows="3" readonly></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <input type="text" class="form-control" id="verEstadoComponente" readonly>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>

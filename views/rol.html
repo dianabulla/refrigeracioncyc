@@ -55,6 +55,27 @@
       </button>
     </div>
 
+    <!-- Filtros de estado -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3">
+          <label class="mb-0 fw-semibold text-muted">Filtrar por estado:</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoRol" id="radioActivosRol" value="activo" checked>
+            <label class="form-check-label" for="radioActivosRol">Activos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoRol" id="radioInactivosRol" value="inactivo">
+            <label class="form-check-label" for="radioInactivosRol">Inactivos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoRol" id="radioTodosRol" value="todas">
+            <label class="form-check-label" for="radioTodosRol">Todos</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla de roles -->
     <div class="card shadow-sm border-0">
       <div class="card-body">
@@ -213,6 +234,45 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ver Rol -->
+  <div class="modal fade" id="modalVerRol" tabindex="-1" aria-labelledby="modalVerRolLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-info" id="modalVerRolLabel">
+            <i class="bi bi-eye me-2"></i>Detalle del Rol
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Código</label>
+            <input type="text" class="form-control" id="verCodigoRol" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nombre</label>
+            <input type="text" class="form-control" id="verNombreRol" readonly>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción</label>
+            <textarea class="form-control" id="verDescripcionRol" rows="2" readonly></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <input type="text" class="form-control" id="verEstadoRol" readonly>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Permisos</label>
+            <textarea class="form-control" id="verPermisosRol" rows="6" readonly></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>

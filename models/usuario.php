@@ -28,10 +28,10 @@ class Usuario
         }
 
         $sql = "SELECT * FROM usuario
-                WHERE email = :u OR codigo = :u
-                LIMIT 1";
+            WHERE email = :u1 OR codigo = :u2
+            LIMIT 1";
         $st = $this->pdo->prepare($sql);
-        $st->execute([':u' => $user]);
+        $st->execute([':u1' => $user, ':u2' => $user]);
         $row = $st->fetch(PDO::FETCH_ASSOC);
 
         if (!$row) {
@@ -57,7 +57,7 @@ class Usuario
     public function obtenerPorId(int $id): ?array
     {
         $st = $this->pdo->prepare(
-            "SELECT id, codigo, nombre, email, activo, fecha_creacion, updated_at, codigo_finca, codigo_rol
+            "SELECT id, codigo, nombre, email, activo, fecha_creacion, updated_at, codigo_finca, codigo_rol, codigo_empresa
              FROM usuario
              WHERE id = :id"
         );
@@ -75,7 +75,7 @@ class Usuario
         if ($codigo === '') return null;
 
         $st = $this->pdo->prepare(
-            "SELECT id, codigo, nombre, email, activo, fecha_creacion, updated_at, codigo_finca, codigo_rol
+            "SELECT id, codigo, nombre, email, activo, fecha_creacion, updated_at, codigo_finca, codigo_rol, codigo_empresa
              FROM usuario
              WHERE codigo = :codigo
              LIMIT 1"
@@ -90,7 +90,7 @@ class Usuario
      */
     public function listar(?string $codigoFinca = null, ?string $codigoRol = null): array
     {
-        $sql = "SELECT id, codigo, nombre, email, activo, fecha_creacion, updated_at, codigo_finca, codigo_rol
+        $sql = "SELECT id, codigo, nombre, email, activo, fecha_creacion, updated_at, codigo_finca, codigo_rol, codigo_empresa
                 FROM usuario
                 WHERE 1=1";
         $params = [];
@@ -113,7 +113,8 @@ class Usuario
 
     /**
      * Crear usuario.
-     * $data: [codigo, nombre, email, password, activo?, codigo_finca?, codigo_rol?]
+     * $data: [codigo, nombre, email, password, activo?, codigo_finca?, codigo_rol?, codigo_empresa?]
+     * Si se proporciona codigo_finca, automáticamente obtiene codigo_empresa de esa finca
      */
     public function crear(array $data): bool
     {
@@ -132,11 +133,24 @@ class Usuario
         }
 
         $hash = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Si se proporciona codigo_finca, obtener automáticamente el codigo_empresa
+        $codigoEmpresa = $data['codigo_empresa'] ?? null;
+        $codigoFinca = $data['codigo_finca'] ?? null;
+        
+        if ($codigoFinca && !$codigoEmpresa) {
+            $stFinca = $this->pdo->prepare("SELECT codigo_empresa FROM finca WHERE codigo = ?");
+            $stFinca->execute([$codigoFinca]);
+            $finca = $stFinca->fetch(PDO::FETCH_ASSOC);
+            if ($finca) {
+                $codigoEmpresa = $finca['codigo_empresa'];
+            }
+        }
 
         $sql = "INSERT INTO usuario
-                    (codigo, nombre, email, password, activo, fecha_creacion, codigo_finca, codigo_rol)
+                    (codigo, nombre, email, password, activo, fecha_creacion, codigo_finca, codigo_rol, codigo_empresa)
                 VALUES
-                    (:codigo, :nombre, :email, :password, :activo, NOW(), :codigo_finca, :codigo_rol)";
+                    (:codigo, :nombre, :email, :password, :activo, NOW(), :codigo_finca, :codigo_rol, :codigo_empresa)";
         $st = $this->pdo->prepare($sql);
 
         return $st->execute([
@@ -145,18 +159,49 @@ class Usuario
             ':email'        => $email,
             ':password'     => $hash,
             ':activo'       => isset($data['activo']) ? (int)$data['activo'] : 1,
-            ':codigo_finca' => $data['codigo_finca'] ?? null,
-            ':codigo_rol'   => $data['codigo_rol']   ?? null,
+            ':codigo_finca' => $codigoFinca,
+            ':codigo_rol'   => $data['codigo_rol'] ?? null,
+            ':codigo_empresa' => $codigoEmpresa,
         ]);
     }
 
     /**
      * Actualizar usuario por ID.
-     * $data puede incluir: nombre, email, password, activo, codigo_finca, codigo_rol
+     * $data puede incluir: nombre, email, password, activo, codigo_finca, codigo_rol, codigo_empresa
+     * Si se actualiza codigo_finca, automáticamente actualiza codigo_empresa también
      */
     public function actualizarPorId(int $id, array $data): bool
     {
         if ($id <= 0) return false;
+
+        if (array_key_exists('codigo_finca', $data) && $data['codigo_finca'] === '') {
+            $data['codigo_finca'] = null;
+        }
+        if (array_key_exists('codigo_empresa', $data) && $data['codigo_empresa'] === '') {
+            $data['codigo_empresa'] = null;
+        }
+        if (array_key_exists('codigo_finca', $data) && is_string($data['codigo_finca'])) {
+            $valor = strtolower(trim($data['codigo_finca']));
+            if ($valor === '' || $valor === '0' || $valor === 'null' || $valor === 'undefined') {
+                $data['codigo_finca'] = null;
+            }
+        }
+        if (array_key_exists('codigo_empresa', $data) && is_string($data['codigo_empresa'])) {
+            $valor = strtolower(trim($data['codigo_empresa']));
+            if ($valor === '' || $valor === '0' || $valor === 'null' || $valor === 'undefined') {
+                $data['codigo_empresa'] = null;
+            }
+        }
+
+        // Si se actualiza codigo_finca, obtener automáticamente codigo_empresa
+        if (array_key_exists('codigo_finca', $data) && $data['codigo_finca']) {
+            $stFinca = $this->pdo->prepare("SELECT codigo_empresa FROM finca WHERE codigo = ?");
+            $stFinca->execute([$data['codigo_finca']]);
+            $finca = $stFinca->fetch(PDO::FETCH_ASSOC);
+            if ($finca) {
+                $data['codigo_empresa'] = $finca['codigo_empresa'];
+            }
+        }
 
         $campos = [];
         $params = [':id' => $id];
@@ -180,6 +225,10 @@ class Usuario
         if (array_key_exists('codigo_rol', $data)) {
             $campos[] = "codigo_rol = :codigo_rol";
             $params[':codigo_rol'] = $data['codigo_rol'];
+        }
+        if (array_key_exists('codigo_empresa', $data)) {
+            $campos[] = "codigo_empresa = :codigo_empresa";
+            $params[':codigo_empresa'] = $data['codigo_empresa'];
         }
         if (!empty($data['password'])) {
             $campos[] = "password = :password";

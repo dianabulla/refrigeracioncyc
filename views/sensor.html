@@ -74,6 +74,27 @@
       </button>
     </div>
 
+    <!-- Filtros de estado -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3">
+          <label class="mb-0 fw-semibold text-muted">Filtrar por estado:</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoSensor" id="radioActivosSensor" value="activo" checked>
+            <label class="form-check-label" for="radioActivosSensor">Activos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoSensor" id="radioInactivosSensor" value="inactivo">
+            <label class="form-check-label" for="radioInactivosSensor">Inactivos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoSensor" id="radioTodosSensor" value="todas">
+            <label class="form-check-label" for="radioTodosSensor">Todos</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla de sensores -->
     <div class="card shadow-sm border-0">
       <div class="card-body">
@@ -223,6 +244,65 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ver Sensor -->
+  <div class="modal fade" id="modalVerSensor" tabindex="-1" aria-labelledby="modalVerSensorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-info" id="modalVerSensorLabel">
+            <i class="bi bi-eye me-2"></i>Detalle del Sensor
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Código</label>
+            <input type="text" class="form-control" id="verCodigoSensor" readonly>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Nombre</label>
+            <input type="text" class="form-control" id="verNombreSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo</label>
+            <input type="text" class="form-control" id="verTipoSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Modelo</label>
+            <input type="text" class="form-control" id="verModeloSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Ubicación</label>
+            <input type="text" class="form-control" id="verUbicacionSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Cuarto Frío</label>
+            <input type="text" class="form-control" id="verCuartoSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha Instalación</label>
+            <input type="text" class="form-control" id="verFechaInstalacionSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha Verificación</label>
+            <input type="text" class="form-control" id="verFechaVerificacionSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Valor Actual</label>
+            <input type="text" class="form-control" id="verValorActualSensor" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <input type="text" class="form-control" id="verEstadoSensor" readonly>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>

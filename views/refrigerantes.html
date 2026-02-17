@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modulo Refrigerantes — C&Cdigital</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="../public/css/estilos.css">
+  <script src="../public/js/auth-check.js"></script>
+</head>
+<body>
+  <div class="topbar d-flex justify-content-between">
+    <div>
+      <a href="#">Soporte</a>
+      <a href="#">Contacto</a>
+    </div>
+    <div>
+      <a href="#" id="btnLogout">Cerrar Sesion</a>
+    </div>
+  </div>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm" style="top: 32px;">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold text-primary" href="#">C&Cdigital</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="admin.html">Panel</a></li>
+          <li class="nav-item"><a class="nav-link" href="dashboard.html">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link active" href="refrigerantes.html">Refrigerantes</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container my-5 pt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h3 mb-0 text-primary">
+        <i class="bi bi-snow me-2"></i>Refrigerantes
+      </h1>
+      <button class="btn btn-primary" onclick="abrirModalCrear()">
+        <i class="bi bi-plus-circle me-1"></i>Nuevo Refrigerante
+      </button>
+    </div>
+
+    <!-- Filtros de estado -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3">
+          <label class="mb-0 fw-semibold text-muted">Filtrar por estado:</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoRefrigerante" id="radioActivosRefrigerante" value="activo" checked>
+            <label class="form-check-label" for="radioActivosRefrigerante">Activos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoRefrigerante" id="radioInactivosRefrigerante" value="inactivo">
+            <label class="form-check-label" for="radioInactivosRefrigerante">Inactivos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoRefrigerante" id="radioTodosRefrigerante" value="todas">
+            <label class="form-check-label" for="radioTodosRefrigerante">Todos</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Cod.</th>
+                <th>Refrigerante / Temperatura</th>
+                <th>Referencia</th>
+                <th class="text-center">Opc.</th>
+              </tr>
+            </thead>
+            <tbody id="tablaRefrigerantes"></tbody>
+          </table>
+        </div>
+        <div id="mensajeVacio" class="text-center text-muted py-5">
+          <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+          No hay refrigerantes registrados
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal fade" id="modalRefrigerante" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="formRefrigerante">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title" id="tituloModal">Registrar Refrigerante</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Codigo *</label>
+                <input type="text" class="form-control" id="codigo" name="codigo" required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Refrigerante / Temperatura *</label>
+                <input type="text" class="form-control" id="refrigerante_temperatura" name="refrigerante_temperatura" required>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Referencia</label>
+                <input type="text" class="form-control" id="referencia" name="referencia" placeholder="Referencia o especificacion">
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer border-top">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ver Refrigerante -->
+  <div class="modal fade" id="modalVerRefrigerante" tabindex="-1" aria-labelledby="modalVerRefrigeranteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-info" id="modalVerRefrigeranteLabel">
+            <i class="bi bi-eye me-2"></i>Detalle del Refrigerante
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Código</label>
+            <input type="text" class="form-control" id="verCodigoRefrigerante" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Refrigerante / Temperatura</label>
+            <input type="text" class="form-control" id="verRefrigeranteTemperatura" readonly>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Referencia</label>
+            <input type="text" class="form-control" id="verReferenciaRefrigerante" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <input type="text" class="form-control" id="verEstadoRefrigerante" readonly>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../public/js/refrigerante.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

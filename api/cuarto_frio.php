@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/session_security.php';
 require_once __DIR__ . '/../models/cuarto_frio.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -14,6 +15,12 @@ requireAuth();
 
 $pdo = Database::connect();
 $cuartoModel = new CuartoFrio($pdo);
+
+$empresaUsuario = getUserEmpresa();
+$fincaUsuario = getUserFinca();
+if (!isSuperusuario() && !$empresaUsuario) {
+    respond(['error' => 'Usuario sin empresa asignada'], 403);
+}
 
 function respond($data, int $status = 200)
 {
@@ -34,20 +41,60 @@ try {
         $codigo      = $_GET['codigo'] ?? null;
         $codigoFinca = $_GET['codigo_finca'] ?? null;
 
-        // Filtrar por finca del usuario si no es superusuario
-        $fincaUsuario = getUserFinca();
-        if ($fincaUsuario !== null) {
-            $codigoFinca = $fincaUsuario;
+        // Filtrar por finca/empresa del usuario si no es superusuario
+        if (!isSuperusuario()) {
+            if ($fincaUsuario) {
+                // Usuario de finca: solo su finca
+                $codigoFinca = $fincaUsuario;
+            } elseif ($empresaUsuario && !$codigoFinca) {
+                // Usuario de empresa sin filtro específico: todas sus fincas
+                // Esto se maneja en el modelo, permitimos que pase
+            }
         }
 
         if ($codigo) {
             $row = $cuartoModel->obtenerPorCodigo($codigo);
-            // Verificar que el cuarto pertenece a la finca del usuario
-            if ($row && $fincaUsuario !== null && ($row['codigo_finca'] ?? null) !== $fincaUsuario) {
-                respond(['error' => 'Acceso denegado'], 403);
+            // Verificar que el cuarto pertenece a la finca/empresa del usuario
+            if ($row && !isSuperusuario()) {
+                $cuartoFinca = $row['codigo_finca'] ?? null;
+                // Obtener empresa del cuarto
+                if ($cuartoFinca) {
+                    $sqlEmp = "SELECT codigo_empresa FROM finca WHERE codigo = ?";
+                    $stEmp = $pdo->prepare($sqlEmp);
+                    $stEmp->execute([$cuartoFinca]);
+                    $fincaRow = $stEmp->fetch(PDO::FETCH_ASSOC);
+                    $cuartoEmpresa = $fincaRow['codigo_empresa'] ?? null;
+                    
+                    // Usuario de finca: solo su finca
+                    if ($fincaUsuario && $cuartoFinca !== $fincaUsuario) {
+                        respond(['error' => 'Acceso denegado'], 403);
+                    }
+                    // Usuario de empresa: solo su empresa
+                    if (!$fincaUsuario && $empresaUsuario && $cuartoEmpresa !== $empresaUsuario) {
+                        respond(['error' => 'Acceso denegado'], 403);
+                    }
+                }
             }
             $row ? respond($row) : respond(['error' => 'Cuarto frío no encontrado'], 404);
         } else {
+            // Para listar, si es usuario de empresa, obtener cuartos de todas sus fincas
+            if (!isSuperusuario() && !$fincaUsuario && $empresaUsuario && !$codigoFinca) {
+                $sqlFincas = "SELECT codigo FROM finca WHERE codigo_empresa = ?";
+                $stFincas = $pdo->prepare($sqlFincas);
+                $stFincas->execute([$empresaUsuario]);
+                $fincas = $stFincas->fetchAll(PDO::FETCH_COLUMN);
+                
+                if (empty($fincas)) {
+                    respond([]);
+                }
+                
+                $placeholders = implode(',', array_fill(0, count($fincas), '?'));
+                $sqlCuartos = "SELECT * FROM cuarto_frio WHERE codigo_finca IN ($placeholders) ORDER BY nombre";
+                $stCuartos = $pdo->prepare($sqlCuartos);
+                $stCuartos->execute($fincas);
+                respond($stCuartos->fetchAll(PDO::FETCH_ASSOC));
+            }
+            
             $rows = $cuartoModel->listar($codigoFinca);
             respond($rows);
         }
@@ -76,18 +123,14 @@ try {
                 respond(['error' => 'Finca no encontrada'], 404);
             }
             
-            $fincaUsuario = getUserFinca();
-            $empresaUsuario = getUserEmpresa();
-            
             if ($fincaUsuario && $data['codigo_finca'] !== $fincaUsuario) {
                 respond(['error' => 'No puede crear cuartos en otra finca'], 403);
             }
             if (!$fincaUsuario && $empresaUsuario && $finca['codigo_empresa'] !== $empresaUsuario) {
-                respond(['error' => 'No puede crear cuartos en finca de otra empresa'], 403);
+                respond(['error' => 'No puede crear cuartos en otra empresa'], 403);
             }
         } elseif (!isSuperusuario()) {
             // Si no especificó finca, asignar la del usuario
-            $fincaUsuario = getUserFinca();
             if ($fincaUsuario) {
                 $data['codigo_finca'] = $fincaUsuario;
             } else {
@@ -112,6 +155,32 @@ try {
         }
         unset($put['codigo']);
 
+        if (!isSuperusuario()) {
+            $row = $cuartoModel->obtenerPorCodigo($codigo);
+            if (!$row) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa
+                         FROM cuarto_frio c
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE c.codigo = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$codigo]);
+            $cuartoData = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cuartoData) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+
+            if ($fincaUsuario && $cuartoData['codigo_finca'] !== $fincaUsuario) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $cuartoData['codigo_empresa'] !== $empresaUsuario) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+        }
+
         $ok = $cuartoModel->actualizarPorCodigo($codigo, $put);
         $ok ? respond(['ok' => true]) :
               respond(['error' => 'No se pudo actualizar'], 400);
@@ -125,6 +194,32 @@ try {
         $codigo = $_GET['codigo'] ?? null;
         if (!$codigo) {
             respond(['error' => 'codigo requerido'], 422);
+        }
+
+        if (!isSuperusuario()) {
+            $row = $cuartoModel->obtenerPorCodigo($codigo);
+            if (!$row) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa
+                         FROM cuarto_frio c
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE c.codigo = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$codigo]);
+            $cuartoData = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cuartoData) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+
+            if ($fincaUsuario && $cuartoData['codigo_finca'] !== $fincaUsuario) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $cuartoData['codigo_empresa'] !== $empresaUsuario) {
+                respond(['error' => 'Acceso denegado'], 403);
+            }
         }
 
         $ok = $cuartoModel->eliminarPorCodigo($codigo);

@@ -48,7 +48,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
       <div>
         <h1 class="h3 mb-1 text-primary">Panel de Administración</h1>
-        <p class="text-muted mb-0">Bienvenida, <strong>Admin</strong>. Gestiona los módulos del sistema.</p>
+        <p class="text-muted mb-0">Bienvenida, <strong id="userName">Usuario</strong>. Gestiona los módulos del sistema.</p>
       </div>
       <div class="quick-actions mt-3 mt-md-0">
         <a href="empresa.html" class="btn btn-primary me-2"><i class="bi bi-plus-circle me-1"></i>Nuevo Cliente</a>
@@ -135,7 +135,22 @@
         </a>
       </div>
 
-      <!-- 6. Dashboard -->
+      <!-- 6. Refrigerantes -->
+      <div class="col-12 col-sm-6 col-lg-4 col-xl-3" data-modulo-id="refrigerantes">
+        <a href="refrigerantes.html" class="text-decoration-none">
+          <div class="card module-card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+              <i class="bi bi-snow module-icon text-primary fs-3 me-3"></i>
+              <div>
+                <h5 class="mb-1 text-dark">Refrigerantes</h5>
+                <small class="text-muted">Tipos y temperaturas</small>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 7. Dashboard -->
       <div class="col-12 col-sm-6 col-lg-4 col-xl-3" data-modulo-id="dashboard">
         <a href="dashboard.html" class="text-decoration-none">
           <div class="card module-card border-0 shadow-sm h-100" style="border-top: 4px solid #003366;">
@@ -150,7 +165,7 @@
         </a>
       </div>
 
-      <!-- 7. Reportes -->
+      <!-- 8. Reportes -->
       <div class="col-12 col-sm-6 col-lg-4 col-xl-3" data-modulo-id="reportes">
         <a href="reporte.html" class="text-decoration-none">
           <div class="card module-card border-0 shadow-sm h-100">
@@ -165,7 +180,7 @@
         </a>
       </div>
 
-      <!-- 8. Mantenimientos -->
+      <!-- 9. Mantenimientos -->
       <div class="col-12 col-sm-6 col-lg-4 col-xl-3" data-modulo-id="mantenimiento">
         <a href="mantenimiento.html" class="text-decoration-none">
           <div class="card module-card border-0 shadow-sm h-100">
@@ -180,7 +195,7 @@
         </a>
       </div>
 
-      <!-- 9. Roles -->
+      <!-- 10. Roles -->
       <div class="col-12 col-sm-6 col-lg-4 col-xl-3" data-modulo-id="roles">
         <a href="rol.html" class="text-decoration-none">
           <div class="card module-card border-0 shadow-sm h-100">
@@ -195,7 +210,7 @@
         </a>
       </div>
 
-      <!-- 10. Usuarios -->
+      <!-- 11. Usuarios -->
       <div class="col-12 col-sm-6 col-lg-4 col-xl-3" data-modulo-id="usuarios">
         <a href="usuario.html" class="text-decoration-none">
           <div class="card module-card border-0 shadow-sm h-100">

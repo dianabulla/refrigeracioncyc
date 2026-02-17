@@ -55,6 +55,27 @@
       </button>
     </div>
 
+    <!-- Filtros de estado -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3">
+          <label class="mb-0 fw-semibold text-muted">Filtrar por estado:</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoUsuario" id="radioActivosUsuario" value="activo" checked>
+            <label class="form-check-label" for="radioActivosUsuario">Activos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoUsuario" id="radioInactivosUsuario" value="inactivo">
+            <label class="form-check-label" for="radioInactivosUsuario">Inactivos</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="estadoUsuario" id="radioTodosUsuario" value="todas">
+            <label class="form-check-label" for="radioTodosUsuario">Todos</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla de usuarios -->
     <div class="card shadow-sm">
       <div class="card-header bg-white border-bottom text-primary fw-semibold">
@@ -69,7 +90,8 @@
               <th>Nom.</th>
               <th class="d-none d-lg-table-cell">Mail</th>
               <th>Rol</th>
-              <th class="d-none d-md-table-cell">Finca</th>
+              <th class="d-none d-md-table-cell">Empresa</th>
+              <th class="d-none d-lg-table-cell">Finca</th>
               <th>Est.</th>
               <th class="text-end">Acc.</th>
             </tr>
@@ -124,11 +146,21 @@
             </div>
 
             <div class="col-md-4">
+              <label class="form-label">Empresa</label>
+              <select class="form-select" id="codigo_empresa">
+                <option value="">(Sin empresa)</option>
+                <!-- opciones desde empresa.js -->
+              </select>
+              <div class="form-text">Usuario de empresa puede ver todas las fincas</div>
+            </div>
+
+            <div class="col-md-4">
               <label class="form-label">Finca</label>
               <select class="form-select" id="codigo_finca">
-                <option value="">(Sin finca)</option>
+                <option value="">(Sin finca - ver todas)</option>
                 <!-- opciones desde finca.js -->
               </select>
+              <div class="form-text">Deja vacío para acceso a toda la empresa</div>
             </div>
 
             <div class="col-md-4">
@@ -145,6 +177,53 @@
             <button type="submit" class="btn btn-primary" id="btnGuardarUsuario">Guardar</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ver Usuario -->
+  <div class="modal fade" id="modalVerUsuario" tabindex="-1" aria-labelledby="modalVerUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-info" id="modalVerUsuarioLabel">
+            <i class="bi bi-eye me-2"></i>Detalle del Usuario
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Código</label>
+            <input type="text" class="form-control" id="verCodigoUsuario" readonly>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Nombre</label>
+            <input type="text" class="form-control" id="verNombreUsuario" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Correo</label>
+            <input type="text" class="form-control" id="verEmailUsuario" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Rol</label>
+            <input type="text" class="form-control" id="verRolUsuario" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Empresa</label>
+            <input type="text" class="form-control" id="verEmpresaUsuario" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Finca</label>
+            <input type="text" class="form-control" id="verFincaUsuario" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <input type="text" class="form-control" id="verEstadoUsuario" readonly>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>

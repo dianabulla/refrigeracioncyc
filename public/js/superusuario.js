@@ -107,49 +107,59 @@ async function editarSuperusuario(id) {
     }
 }
 
-/** 🟣 Guardar cambios si está en modo editar */
-document.getElementById("formSuperusuario").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const btn = document.getElementById("btnGuardar");
-    const editId = btn.dataset.editId;
-
-    if (editId) {
-        // Actualizar registro
-        const data = {
-            codigo: document.getElementById("codigo").value.trim(),
-            nombre: document.getElementById("nombre").value.trim(),
-            descripcion: document.getElementById("descripcion").value.trim(),
-            email: document.getElementById("email").value.trim(),
-            password: document.getElementById("password").value.trim(),
-            activo: document.getElementById("activo").checked ? 1 : 0,
-        };
-
-        try {
-            const res = await fetch(`${API_URL}?id=${editId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-            });
-
-            const result = await res.json();
-            if (res.ok) {
-                alert(result.message);
-                btn.textContent = "Guardar";
-                btn.removeAttribute("data-edit-id");
-                document.getElementById("formSuperusuario").reset();
-                cargarSuperusuarios();
-            } else {
-                alert(result.error || "Error al actualizar");
-            }
-        } catch (error) {
-            console.error("Error al actualizar:", error);
-        }
-    } else {
-        // Crear nuevo
-        crearSuperusuario(e);
+/** 🟣 Inicialización protegida - solo ejecutar si existe el formulario */
+document.addEventListener("DOMContentLoaded", () => {
+    const formSuperusuario = document.getElementById("formSuperusuario");
+    
+    // Solo ejecutar si estamos en la página de superusuarios
+    if (!formSuperusuario) {
+        return;
     }
-});
 
-/** 🚀 Inicialización */
-document.addEventListener("DOMContentLoaded", cargarSuperusuarios);
+    // Guardar cambios si está en modo editar
+    formSuperusuario.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const btn = document.getElementById("btnGuardar");
+        const editId = btn.dataset.editId;
+
+        if (editId) {
+            // Actualizar registro
+            const data = {
+                codigo: document.getElementById("codigo").value.trim(),
+                nombre: document.getElementById("nombre").value.trim(),
+                descripcion: document.getElementById("descripcion").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                password: document.getElementById("password").value.trim(),
+                activo: document.getElementById("activo").checked ? 1 : 0,
+            };
+
+            try {
+                const res = await fetch(`${API_URL}?id=${editId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    alert(result.message);
+                    btn.textContent = "Guardar";
+                    btn.removeAttribute("data-edit-id");
+                    formSuperusuario.reset();
+                    cargarSuperusuarios();
+                } else {
+                    alert(result.error || "Error al actualizar");
+                }
+            } catch (error) {
+                console.error("Error al actualizar:", error);
+            }
+        } else {
+            // Crear nuevo
+            crearSuperusuario(e);
+        }
+    });
+
+    // Cargar la tabla al inicio
+    cargarSuperusuarios();
+});

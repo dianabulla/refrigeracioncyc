@@ -107,6 +107,11 @@ function getUserFinca(): ?string {
     if (($user['tipo'] ?? null) === 'superusuario') {
         return null;
     }
+
+    // Rol empresa: no restringir por finca
+    if (($user['codigo_rol'] ?? null) === 'empresa') {
+        return null;
+    }
     
     return $user['codigo_finca'] ?? null;
 }
@@ -183,6 +188,14 @@ function getUserPermisos(): array {
             'crear_usuarios' => true,
             'editar_usuarios' => true,
             'eliminar_usuarios' => true,
+            'ver_roles' => true,
+            'crear_roles' => true,
+            'editar_roles' => true,
+            'eliminar_roles' => true,
+            'ver_empresas' => true,
+            'crear_empresas' => true,
+            'editar_empresas' => true,
+            'eliminar_empresas' => true,
             'ver_fincas' => true,
             'crear_fincas' => true,
             'editar_fincas' => true,
@@ -199,6 +212,10 @@ function getUserPermisos(): array {
             'crear_componentes' => true,
             'editar_componentes' => true,
             'eliminar_componentes' => true,
+            'ver_refrigerantes' => true,
+            'crear_refrigerantes' => true,
+            'editar_refrigerantes' => true,
+            'eliminar_refrigerantes' => true,
             'ver_reportes' => true,
             'exportar_reportes' => true,
             'ver_mantenimientos' => true,

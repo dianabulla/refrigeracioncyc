@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/session_security.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -10,6 +11,18 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Cualquier usuario autenticado puede ver reportes
 requireAuth();
+
+// SEGURIDAD: Validar que el usuario tenga empresa/finca asignada
+$sessionContext = getSessionContext();
+if (!$sessionContext) {
+    respond(['error' => 'Sesión inválida'], 401);
+}
+
+$empresaUsuario = getUserEmpresa();
+$fincaUsuario = getUserFinca();
+if (!isSuperusuario() && !$empresaUsuario) {
+    respond(['error' => 'Usuario sin empresa asignada'], 403);
+}
 
 $pdo = Database::connect();
 
@@ -31,6 +44,7 @@ try {
         $codigo       = $_GET['codigo'] ?? null;
         $codigoSensor = $_GET['codigo_sensor'] ?? null;
         $codigoCuarto = $_GET['codigo_cuarto'] ?? null;
+        $codigoFinca  = $_GET['codigo_finca'] ?? null;
         $desde        = $_GET['desde'] ?? null; // sobre fecha_captura
         $hasta        = $_GET['hasta'] ?? null;
 
@@ -61,9 +75,52 @@ try {
 
         // Detalle por código
         if ($codigo) {
-            $st = $pdo->prepare("SELECT * FROM reporte WHERE codigo = ?");
-            $st->execute([$codigo]);
+            $sql = "SELECT r.*
+                    FROM reporte r
+                    INNER JOIN sensor s ON r.codigo_sensor = s.codigo
+                    INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+                    INNER JOIN finca f ON c.codigo_finca = f.codigo
+                    WHERE r.codigo = ?";
+            $params = [$codigo];
+
+            if (!isSuperusuario()) {
+                if ($fincaUsuario) {
+                    $sql .= " AND f.codigo = ?";
+                    $params[] = $fincaUsuario;
+                } elseif ($empresaUsuario) {
+                    $sql .= " AND f.codigo_empresa = ?";
+                    $params[] = $empresaUsuario;
+                }
+            }
+
+            $st = $pdo->prepare($sql);
+            $st->execute($params);
             $row = $st->fetch(PDO::FETCH_ASSOC);
+            
+            // Verificar acceso para usuario no super
+            if ($row && !isSuperusuario()) {
+                $sqlCheck = "SELECT f.codigo_empresa, c.codigo_finca
+                             FROM reporte r
+                             INNER JOIN sensor s ON r.codigo_sensor = s.codigo
+                             INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+                             INNER JOIN finca f ON c.codigo_finca = f.codigo
+                             WHERE r.codigo = ?";
+                $stCheck = $pdo->prepare($sqlCheck);
+                $stCheck->execute([$codigo]);
+                $reporteData = $stCheck->fetch(PDO::FETCH_ASSOC);
+                
+                if ($reporteData) {
+                    // Usuario de finca: solo su finca
+                    if ($fincaUsuario && $reporteData['codigo_finca'] !== $fincaUsuario) {
+                        respond(['error' => 'No encontrado'], 404);
+                    }
+                    // Usuario de empresa: solo su empresa
+                    if (!$fincaUsuario && $reporteData['codigo_empresa'] !== $empresaUsuario) {
+                        respond(['error' => 'No encontrado'], 404);
+                    }
+                }
+            }
+            
             $row ? respond($row) : respond(['error' => 'No encontrado'], 404);
         }
 
@@ -79,26 +136,25 @@ try {
         
         // AISLAMIENTO: Filtrar por empresa y finca del usuario
         if (!isSuperusuario()) {
-            $fincaUsuario = getUserFinca();
-            $empresaUsuario = getUserEmpresa();
-            
             if ($fincaUsuario) {
-                // Usuario de finca: solo ve datos de su finca
+                // Usuario de finca: solo su finca
                 $sql .= " AND f.codigo = ?";
                 $params[] = $fincaUsuario;
             } elseif ($empresaUsuario) {
-                // Usuario de empresa: ve datos de todas sus fincas
+                // Usuario de empresa: todas sus fincas
                 $sql .= " AND f.codigo_empresa = ?";
                 $params[] = $empresaUsuario;
-            } else {
-                // Sin empresa ni finca: no ve nada
-                respond(['error' => 'Usuario sin asignación de empresa/finca'], 403);
             }
         }
 
         if ($codigoSensor) {
             $sql .= " AND r.codigo_sensor = ?";
             $params[] = $codigoSensor;
+        }
+
+        if ($codigoFinca) {
+            $sql .= " AND c.codigo_finca = ?";
+            $params[] = $codigoFinca;
         }
 
         if ($codigoCuarto) {
@@ -138,22 +194,32 @@ try {
 
         $resultados = [];
         $errores = [];
-        $sql = "INSERT INTO reporte (
-                    codigo, nombre, tipo_reporte,
-                    activo, fecha_creacion,
-                    report_id, fecha_captura, fecha,
-                    voltaje, amperaje, aire, otro, puerta,
-                    presion_s, presion_e, temperatura, humedad,
-                    codigo_sensor, codigo_cuarto, ubicacion
-                )
-                VALUES (
-                    :codigo, :nombre, :tipo_reporte,
-                    :activo, NOW(),
-                    :report_id, :fecha_captura, :fecha,
-                    :voltaje, :amperaje, :aire, :otro, :puerta,
-                    :presion_s, :presion_e, :temperatura, :humedad,
-                    :codigo_sensor, :codigo_cuarto, :ubicacion
-                )";
+        $columns = $pdo->query("SHOW COLUMNS FROM reporte")->fetchAll(PDO::FETCH_COLUMN);
+        $hasEmpresa = in_array('codigo_empresa', $columns, true);
+        $hasFinca = in_array('codigo_finca', $columns, true);
+
+        $insertColumns = [
+            'codigo', 'nombre', 'tipo_reporte',
+            'activo', 'fecha_creacion',
+            'report_id', 'fecha_captura', 'fecha',
+            'voltaje', 'amperaje', 'aire', 'otro', 'puerta',
+            'presion_s', 'presion_e', 'temperatura', 'humedad',
+            'codigo_sensor', 'codigo_cuarto', 'ubicacion'
+        ];
+
+        if ($hasEmpresa) {
+            $insertColumns[] = 'codigo_empresa';
+        }
+        if ($hasFinca) {
+            $insertColumns[] = 'codigo_finca';
+        }
+
+        $placeholders = array_map(function ($column) {
+            return $column === 'fecha_creacion' ? 'NOW()' : ':' . $column;
+        }, $insertColumns);
+
+        $sql = "INSERT INTO reporte (" . implode(', ', $insertColumns) . ")
+                VALUES (" . implode(', ', $placeholders) . ")";
 
         $st = $pdo->prepare($sql);
 
@@ -172,7 +238,11 @@ try {
             }
 
             // Buscar el codigo_cuarto y tipo desde el sensor
-            $stSensor = $pdo->prepare("SELECT codigo_cuarto, tipo, ubicacion FROM sensor WHERE codigo = ?");
+            $stSensor = $pdo->prepare("SELECT s.codigo_cuarto, s.tipo, s.ubicacion, c.codigo_finca, f.codigo_empresa
+                                       FROM sensor s
+                                       INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+                                       INNER JOIN finca f ON c.codigo_finca = f.codigo
+                                       WHERE s.codigo = ?");
             $stSensor->execute([$codigoSensor]);
             $sensorData = $stSensor->fetch(PDO::FETCH_ASSOC);
             
@@ -188,10 +258,21 @@ try {
             $codigoCuarto = $sensorData['codigo_cuarto'];
             $tipoReporte = $sensorData['tipo'];
             $ubicacion = $sensorData['ubicacion'] ?? 'exterior';
+            $codigoEmpresa = $sensorData['codigo_empresa'] ?? null;
+            $codigoFinca = $sensorData['codigo_finca'] ?? null;
+
+            if (!isSuperusuario() && $codigoFinca !== $fincaUsuario) {
+                $errores[] = [
+                    'index' => $index,
+                    'codigo_sensor' => $codigoSensor,
+                    'error' => 'Sensor no pertenece a tu finca'
+                ];
+                continue;
+            }
 
             // Ejecutar insert
             try {
-                $ok = $st->execute([
+                $params = [
                     ':codigo'        => trim($d['codigo'] ?? ''),
                     ':nombre'        => $d['nombre'] ?? null,
                     ':tipo_reporte'  => $tipoReporte,
@@ -211,7 +292,16 @@ try {
                     ':codigo_sensor' => $codigoSensor,
                     ':codigo_cuarto' => $codigoCuarto,
                     ':ubicacion'     => $ubicacion,
-                ]);
+                ];
+
+                if ($hasEmpresa) {
+                    $params[':codigo_empresa'] = $codigoEmpresa;
+                }
+                if ($hasFinca) {
+                    $params[':codigo_finca'] = $codigoFinca;
+                }
+
+                $ok = $st->execute($params);
             } catch (Exception $e) {
                 $ok = false;
                 $errorMsg = $e->getMessage();
@@ -262,7 +352,11 @@ try {
         $codigo = $p['codigo'] ?? null;
         if (!$codigo) respond(['error' => 'codigo requerido'], 422);
 
-        $sql = "UPDATE reporte SET
+        $sql = "UPDATE reporte r
+            INNER JOIN sensor s ON r.codigo_sensor = s.codigo
+            INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+            INNER JOIN finca f ON c.codigo_finca = f.codigo
+            SET
                     nombre         = :nombre,
                     tipo_reporte   = :tipo_reporte,
                     activo         = :activo,
@@ -281,10 +375,14 @@ try {
                     codigo_sensor  = :codigo_sensor,
                     codigo_cuarto  = :codigo_cuarto,
                     updated_at     = NOW()
-                WHERE codigo = :codigo";
+                WHERE r.codigo = :codigo";
+
+        if (!isSuperusuario()) {
+            $sql .= " AND f.codigo = :codigo_finca";
+        }
 
         $st = $pdo->prepare($sql);
-        $ok = $st->execute([
+        $params = [
             ':nombre'        => $p['nombre'] ?? null,
             ':tipo_reporte'  => $p['tipo_reporte'] ?? null,
             ':activo'        => isset($p['activo']) ? (int)$p['activo'] : 1,
@@ -303,10 +401,18 @@ try {
             ':codigo_sensor' => $p['codigo_sensor'] ?? null,
             ':codigo_cuarto' => $p['codigo_cuarto'] ?? null,
             ':codigo'        => $codigo,
-        ]);
+        ];
 
-        $ok ? respond(['ok' => true])
-            : respond(['error' => 'No se pudo actualizar'], 400);
+        if (!isSuperusuario()) {
+            $params[':codigo_finca'] = $fincaUsuario;
+        }
+
+        $ok = $st->execute($params);
+        if (!$ok || $st->rowCount() === 0) {
+            respond(['error' => 'No se pudo actualizar o no encontrado'], 404);
+        }
+
+        respond(['ok' => true]);
     }
 
     // ---------- DELETE: eliminar por código ----------
@@ -314,11 +420,26 @@ try {
         $codigo = $_GET['codigo'] ?? null;
         if (!$codigo) respond(['error' => 'codigo requerido'], 422);
 
-        $st = $pdo->prepare("DELETE FROM reporte WHERE codigo = ?");
-        $ok = $st->execute([$codigo]);
+        $sql = "DELETE r
+            FROM reporte r
+            INNER JOIN sensor s ON r.codigo_sensor = s.codigo
+            INNER JOIN cuarto_frio c ON s.codigo_cuarto = c.codigo
+            INNER JOIN finca f ON c.codigo_finca = f.codigo
+            WHERE r.codigo = ?";
+        $params = [$codigo];
 
-        $ok ? respond(['ok' => true])
-            : respond(['error' => 'No se pudo eliminar'], 400);
+        if (!isSuperusuario()) {
+            $sql .= " AND f.codigo = ?";
+            $params[] = $fincaUsuario;
+        }
+
+        $st = $pdo->prepare($sql);
+        $ok = $st->execute($params);
+        if (!$ok || $st->rowCount() === 0) {
+            respond(['error' => 'No se pudo eliminar o no encontrado'], 404);
+        }
+
+        respond(['ok' => true]);
     }
 
     respond(['error' => 'Método no permitido'], 405);

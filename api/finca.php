@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/session_security.php';
 require_once __DIR__ . '/../models/finca.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -34,6 +35,41 @@ try {
         $codigo        = $_GET['codigo'] ?? null;
         $codigoEmpresa = $_GET['codigo_empresa'] ?? null;
 
+        if (!isSuperusuario()) {
+            $empresaUsuario = getUserEmpresa();
+            $fincaUsuario = getUserFinca();
+            
+            if (!$empresaUsuario) {
+                respond(['ok' => false, 'error' => 'Usuario sin empresa asignada'], 403);
+            }
+
+            if ($codigo) {
+                $row = $fincaModel->obtenerPorCodigo($codigo);
+                if (!$row) {
+                    respond(['ok' => false, 'error' => 'Finca no encontrada'], 404);
+                }
+                
+                // Verificar acceso: si tiene finca, solo esa; si no, cualquiera de su empresa
+                if ($fincaUsuario && $codigo !== $fincaUsuario) {
+                    respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+                }
+                if (!$fincaUsuario && $row['codigo_empresa'] !== $empresaUsuario) {
+                    respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+                }
+                
+                respond($row);
+            }
+            
+            // Listar: si tiene finca, solo esa; si no, todas de su empresa
+            if ($fincaUsuario) {
+                $row = $fincaModel->obtenerPorCodigo($fincaUsuario);
+                respond($row ? [$row] : []);
+            } else {
+                $rows = $fincaModel->listar($empresaUsuario);
+                respond($rows);
+            }
+        }
+
         // Filtrar por empresa del usuario si no es superusuario
         $empresaUsuario = getUserEmpresa();
         if ($empresaUsuario !== null) {
@@ -58,6 +94,14 @@ try {
         // Verificar permiso para crear fincas
         requirePermiso('crear_fincas');
 
+        if (!isSuperusuario()) {
+            $empresaUsuario = getUserEmpresa();
+
+            if (!$empresaUsuario) {
+                respond(['ok' => false, 'error' => 'Usuario sin empresa asignada'], 403);
+            }
+        }
+
         $data = json_decode(file_get_contents('php://input'), true);
         if (!is_array($data) || empty($data)) {
             // fallback por si envías x-www-form-urlencoded
@@ -67,11 +111,11 @@ try {
         // AISLAMIENTO: Validar empresa
         if (!isSuperusuario()) {
             $empresaUsuario = getUserEmpresa();
-            
+
             if (!empty($data['codigo_empresa']) && $data['codigo_empresa'] !== $empresaUsuario) {
                 respond(['ok' => false, 'error' => 'No puede crear fincas en otra empresa'], 403);
             }
-            
+
             // Si no especificó empresa, asignar la del usuario
             if (empty($data['codigo_empresa'])) {
                 if ($empresaUsuario) {
@@ -92,12 +136,36 @@ try {
         // Verificar permiso para editar fincas
         requirePermiso('editar_fincas');
 
+        if (!isSuperusuario()) {
+            $empresaUsuario = getUserEmpresa();
+            $fincaUsuario = getUserFinca();
+
+            if (!$empresaUsuario) {
+                respond(['ok' => false, 'error' => 'Usuario sin empresa asignada'], 403);
+            }
+        }
+
         parse_str(file_get_contents('php://input'), $put);
         $codigo = $put['codigo'] ?? null;
         if (!$codigo) {
             respond(['ok' => false, 'error' => 'codigo requerido'], 422);
         }
         unset($put['codigo']); // no permitimos cambiar el código aquí
+
+        if (!isSuperusuario()) {
+            $row = $fincaModel->obtenerPorCodigo($codigo);
+            if (!$row) {
+                respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+            }
+
+            if ($fincaUsuario) {
+                if ($row['codigo'] !== $fincaUsuario) {
+                    respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+                }
+            } elseif ($row['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+            }
+        }
 
         $ok = $fincaModel->actualizarPorCodigo($codigo, $put);
         $ok ? respond(['ok' => true])
@@ -109,9 +177,33 @@ try {
         // Verificar permiso para eliminar fincas
         requirePermiso('eliminar_fincas');
 
+        if (!isSuperusuario()) {
+            $empresaUsuario = getUserEmpresa();
+            $fincaUsuario = getUserFinca();
+
+            if (!$empresaUsuario) {
+                respond(['ok' => false, 'error' => 'Usuario sin empresa asignada'], 403);
+            }
+        }
+
         $codigo = $_GET['codigo'] ?? null;
         if (!$codigo) {
             respond(['ok' => false, 'error' => 'codigo requerido'], 422);
+        }
+
+        if (!isSuperusuario()) {
+            $row = $fincaModel->obtenerPorCodigo($codigo);
+            if (!$row) {
+                respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+            }
+
+            if ($fincaUsuario) {
+                if ($row['codigo'] !== $fincaUsuario) {
+                    respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+                }
+            } elseif ($row['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok' => false, 'error' => 'Acceso denegado'], 403);
+            }
         }
 
         $ok = $fincaModel->eliminarPorCodigo($codigo);

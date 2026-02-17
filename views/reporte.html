@@ -54,15 +54,23 @@
     <div class="card mb-4 shadow-sm border-0">
       <div class="card-body">
         <form id="formFiltros" class="row g-3">
-          <div class="col-md-4">
-            <label for="filtro_sensor" class="form-label">Sensor</label>
-            <input type="text" class="form-control" id="filtro_sensor" placeholder="Código de sensor">
+          <div class="col-md-3">
+            <label for="filtro_finca" class="form-label">Finca</label>
+            <select class="form-select" id="filtro_finca">
+              <option value="">Todas las fincas</option>
+            </select>
           </div>
           <div class="col-md-3">
+            <label for="filtro_cuarto" class="form-label">Cuarto Frío</label>
+            <select class="form-select" id="filtro_cuarto">
+              <option value="">Todos los cuartos</option>
+            </select>
+          </div>
+          <div class="col-md-2">
             <label for="filtro_desde" class="form-label">Desde</label>
             <input type="date" class="form-control" id="filtro_desde">
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label for="filtro_hasta" class="form-label">Hasta</label>
             <input type="date" class="form-control" id="filtro_hasta">
           </div>
@@ -78,6 +86,15 @@
       </div>
     </div>
 
+    <!-- Botón de descarga seleccionados -->
+    <div class="mb-3 d-flex gap-2">
+      <button type="button" class="btn btn-success" id="btnDescargarSeleccionados" disabled>
+        <i class="bi bi-file-earmark-excel me-1"></i>
+        Descargar Seleccionados a Excel
+      </button>
+      <span class="badge bg-secondary align-self-center" id="contadorSeleccionados">0 seleccionados</span>
+    </div>
+
     <!-- Tabla de Reportes -->
     <div class="card shadow-sm border-0">
       <div class="card-body p-0">
@@ -85,6 +102,9 @@
           <table class="table table-hover table-sm align-middle mb-0">
             <thead class="table-light">
               <tr>
+                <th class="text-center" style="width: 40px;">
+                  <input type="checkbox" class="form-check-input" id="checkTodos" title="Seleccionar todos">
+                </th>
                 <th class="text-nowrap">Código</th>
                 <th class="text-nowrap">Nombre</th>
                 <th class="text-nowrap">Tipo</th>
@@ -109,7 +129,7 @@
             </thead>
             <tbody id="tablaReportes">
               <tr>
-                <td colspan="21" class="text-center py-4">Cargando reportes...</td>
+                <td colspan="22" class="text-center py-4">Cargando reportes...</td>
               </tr>
             </tbody>
           </table>

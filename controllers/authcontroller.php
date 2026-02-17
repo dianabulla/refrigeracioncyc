@@ -83,15 +83,14 @@ class AuthController {
             }
 
             if ($hasUser) {
-                // OJO: tu tabla NO tiene columna 'usuario', así que buscamos por email o codigo.
+                // Obtener usuario - codigo_empresa ahora está en la tabla usuario directamente
                 $st = $this->pdo->prepare(
-                    "SELECT u.*, f.codigo_empresa 
+                    "SELECT u.* 
                      FROM usuario u
-                     LEFT JOIN finca f ON u.codigo_finca = f.codigo
-                     WHERE u.email = :v OR u.codigo = :v
+                     WHERE u.email = :v1 OR u.codigo = :v2
                      LIMIT 1"
                 );
-                $st->execute([':v' => $u]);
+                $st->execute([':v1' => $u, ':v2' => $u]);
                 $ux = $st->fetch();
 
                 if ($ux && password_verify($p, $ux['password'])) {

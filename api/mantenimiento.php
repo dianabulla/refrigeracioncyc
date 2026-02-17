@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/session_security.php';
 require_once __DIR__ . '/../models/mantenimiento.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -10,6 +11,12 @@ requireAuth(); // cualquier usuario autenticado puede gestionar mantenimientos
 
 $pdo = Database::connect();
 $model = new Mantenimiento($pdo);
+
+$empresaUsuario = getUserEmpresa();
+$fincaUsuario = getUserFinca();
+if (!isSuperusuario() && !$empresaUsuario) {
+    respond(['ok' => false, 'error' => 'Usuario sin empresa asignada'], 403);
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -43,16 +50,17 @@ try {
                              WHERE m.codigo = ?";
                 $stCheck = $pdo->prepare($sqlCheck);
                 $stCheck->execute([$codigo]);
-                $mantFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
-                
-                $fincaUsuario = getUserFinca();
-                $empresaUsuario = getUserEmpresa();
-                
-                if ($fincaUsuario && $mantFinca['codigo_finca'] !== $fincaUsuario) {
-                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
-                }
-                if (!$fincaUsuario && $empresaUsuario && $mantFinca['codigo_empresa'] !== $empresaUsuario) {
-                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                $mantData = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+                if ($mantData) {
+                    // Usuario de finca: solo su finca
+                    if ($fincaUsuario && $mantData['codigo_finca'] !== $fincaUsuario) {
+                        respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                    }
+                    // Usuario de empresa: solo su empresa
+                    if (!$fincaUsuario && $mantData['codigo_empresa'] !== $empresaUsuario) {
+                        respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                    }
                 }
             }
             
@@ -63,23 +71,20 @@ try {
 
         // Listar con filtro de finca/empresa
         if (!isSuperusuario()) {
-            $fincaUsuario = getUserFinca();
-            $empresaUsuario = getUserEmpresa();
-            
             $sql = "SELECT m.* FROM mantenimiento m
                     INNER JOIN cuarto_frio c ON m.codigo_cuarto = c.codigo
                     INNER JOIN finca f ON c.codigo_finca = f.codigo
                     WHERE 1=1";
             $params = [];
-            
+
             if ($fincaUsuario) {
+                // Usuario de finca: solo su finca
                 $sql .= " AND f.codigo = ?";
                 $params[] = $fincaUsuario;
             } elseif ($empresaUsuario) {
+                // Usuario de empresa: todas sus fincas
                 $sql .= " AND f.codigo_empresa = ?";
                 $params[] = $empresaUsuario;
-            } else {
-                respond(['ok'=>false,'error'=>'Sin permisos'],403);
             }
             
             $sql .= " ORDER BY m.fecha_inicio DESC";
@@ -117,9 +122,6 @@ try {
             if (!$cuartoFinca) {
                 respond(['ok'=>false,'error'=>'Cuarto no encontrado'],404);
             }
-            
-            $fincaUsuario = getUserFinca();
-            $empresaUsuario = getUserEmpresa();
             
             if ($fincaUsuario && $cuartoFinca['codigo_finca'] !== $fincaUsuario) {
                 respond(['ok'=>false,'error'=>'No puede crear mantenimientos en otra finca'],403);
@@ -160,6 +162,27 @@ try {
         $data = json_decode(file_get_contents("php://input"), true);
         if (!$data) respond(['ok'=>false,'error'=>'JSON inválido'],422);
 
+        if (!isSuperusuario()) {
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa
+                         FROM mantenimiento m
+                         INNER JOIN cuarto_frio c ON m.codigo_cuarto = c.codigo
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE m.codigo = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$codigo]);
+            $mantFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$mantFinca) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if ($fincaUsuario && $mantFinca['codigo_finca'] !== $fincaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $mantFinca['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+        }
+
         $ok = $model->actualizar($codigo, [
             'nombre'            => !empty($data['nombre']) ? trim($data['nombre']) : null,
             'descripcion'       => !empty($data['descripcion']) ? trim($data['descripcion']) : null,
@@ -186,6 +209,27 @@ try {
 
         $codigo = $_GET['codigo'] ?? null;
         if (!$codigo) respond(['ok'=>false,'error'=>'Debe enviar ?codigo='],422);
+
+        if (!isSuperusuario()) {
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa
+                         FROM mantenimiento m
+                         INNER JOIN cuarto_frio c ON m.codigo_cuarto = c.codigo
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE m.codigo = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$codigo]);
+            $mantFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$mantFinca) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if ($fincaUsuario && $mantFinca['codigo_finca'] !== $fincaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $mantFinca['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+        }
 
         $ok = $model->eliminar($codigo);
         return $ok

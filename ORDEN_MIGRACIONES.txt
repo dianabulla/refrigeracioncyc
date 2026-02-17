@@ -1,0 +1,265 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    ORDEN CORRECTO DE MIGRACIONES SQL                            ║
+║              Para Respetar Relaciones FK y No Romper Datos                      ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+¿POR QUÉ 3 ARCHIVOS EN VEZ DE 1?
+════════════════════════════════════════════════════════════════════════════════
+
+  ❌ PROBLEMA: Si agregamos columnas NOT NULL directamente:
+     ALTER TABLE usuario ADD COLUMN codigo_empresa VARCHAR(50) NOT NULL;
+     
+     ERROR: Cannot add column - existing rows don't have values
+     (Las filas existentes no tienen valor para la nueva columna)
+
+  ✅ SOLUCIÓN: 3 fases
+     1. Agregar columnas como NULL (permite filas existentes)
+     2. Llenar datos usando relaciones FK existentes
+     3. Convertir a NOT NULL + agregar FKs
+
+
+FLUJO VISUAL
+════════════════════════════════════════════════════════════════════════════════
+
+FASE 1: AGREGAR COLUMNAS (NULL)
+────────────────────────────────────────────────────────────────────────────────
+Archivo: migrations/add_empresa_finca_isolation.sql
+
+  ANTES:                          DESPUÉS:
+  ┌────────────────┐             ┌────────────────────────┐
+  │ usuario        │             │ usuario                │
+  ├────────────────┤             ├────────────────────────┤
+  │ id             │             │ id                     │
+  │ codigo         │             │ codigo                 │
+  │ nombre         │             │ nombre                 │
+  │ codigo_finca   │  ──────→    │ codigo_finca           │
+  │ codigo_rol     │             │ codigo_rol             │
+  └────────────────┘             │ codigo_empresa (NULL)  │ ← NUEVA
+                                 └────────────────────────┘
+
+  Estado: Datos existentes intactos ✅
+          Nuevas columnas vacías (NULL)
+          NO hay constraints todavía
+
+
+FASE 2: LLENAR DATOS (Usar relaciones FK)
+────────────────────────────────────────────────────────────────────────────────
+Archivo: migrations/populate_empresa_finca_data.sql
+
+  RELACIONES EXISTENTES:
+  usuario.codigo_finca → finca.codigo
+  finca.codigo_empresa → empresa.codigo
+
+  QUERY:
+  UPDATE usuario u
+  JOIN finca f ON u.codigo_finca = f.codigo
+  SET u.codigo_empresa = f.codigo_empresa;
+
+  RESULTADO:
+  ┌────────────────────────┐
+  │ usuario                │
+  ├────────────────────────┤
+  │ id: 1                  │
+  │ codigo_finca: FIN001   │
+  │ codigo_empresa: EMP001 │ ← LLENADO automáticamente
+  └────────────────────────┘
+
+  Estado: Datos poblados usando FK existentes ✅
+          NO hay registros NULL
+          Listo para agregar constraints
+
+
+FASE 3: AGREGAR CONSTRAINTS (NOT NULL + FK)
+────────────────────────────────────────────────────────────────────────────────
+Archivo: migrations/add_empresa_finca_constraints.sql
+
+  1. Convertir a NOT NULL:
+     ALTER TABLE usuario 
+     MODIFY COLUMN codigo_empresa VARCHAR(50) NOT NULL;
+
+  2. Agregar índice:
+     ALTER TABLE usuario
+     ADD KEY idx_usuario_empresa (codigo_empresa);
+
+  3. Agregar FK:
+     ALTER TABLE usuario
+     ADD CONSTRAINT fk_usuario_empresa
+     FOREIGN KEY (codigo_empresa) REFERENCES empresa (codigo);
+
+  RESULTADO:
+  ┌────────────────────────┐
+  │ usuario                │
+  ├────────────────────────┤
+  │ codigo_empresa         │
+  │ NOT NULL ✓             │
+  │ FK → empresa ✓         │
+  │ INDEX ✓                │
+  └────────────────────────┘
+
+  Estado: Estructura completa ✅
+          Integridad garantizada ✅
+          Relaciones intactas ✅
+
+
+ORDEN DE EJECUCIÓN (CRÍTICO)
+════════════════════════════════════════════════════════════════════════════════
+
+  1️⃣  migrations/add_empresa_finca_isolation.sql
+      └─ Agrega columnas NULL
+      └─ Duración: ~3 segundos
+      └─ Resultado: Columnas creadas
+
+  2️⃣  migrations/populate_empresa_finca_data.sql
+      └─ Llena datos usando FK existentes
+      └─ Duración: ~10 segundos
+      └─ Resultado: Datos poblados
+
+  3️⃣  VERIFICAR: SELECT COUNT(*) FROM usuario WHERE codigo_empresa IS NULL;
+      └─ DEBE RETORNAR: 0
+      └─ SI RETORNA > 0: NO CONTINUAR (investigar)
+
+  4️⃣  migrations/add_empresa_finca_constraints.sql
+      └─ Convierte a NOT NULL + FKs
+      └─ Duración: ~5 segundos
+      └─ Resultado: Constraints agregados
+
+
+RELACIONES FK RESPETADAS
+════════════════════════════════════════════════════════════════════════════════
+
+  JERARQUÍA EXISTENTE:
+  
+    superusuario
+         ↓
+      empresa ←──────────┐
+         ↓               │ (se respeta)
+       finca ←────────┐  │
+         ↓            │  │
+    ┌─────────────┐   │  │
+    │ cuarto_frio │   │  │
+    └─────────────┘   │  │
+         ↓            │  │
+    ┌─────────────┐   │  │
+    │   sensor    │   │  │ (se agregan nuevos FK)
+    │ +emp +finca │───┴──┘
+    └─────────────┘
+         ↓
+    ┌─────────────┐
+    │   reporte   │
+    │ +emp +finca │───────┐
+    └─────────────┘       │
+                          │ (se mantienen existentes)
+    ┌─────────────┐       │
+    │ componente  │       │
+    │ +emp +finca │───────┤
+    └─────────────┘       │
+                          │
+    ┌─────────────┐       │
+    │ mantenimiento│      │
+    │ +emp +finca │───────┘
+    └─────────────┘
+
+  NUEVOS FK AGREGADOS (Fase 3):
+  - usuario.codigo_empresa → empresa.codigo
+  - cuarto_frio.codigo_empresa → empresa.codigo
+  - sensor.codigo_empresa → empresa.codigo
+  - sensor.codigo_finca → finca.codigo
+  - reporte.codigo_empresa → empresa.codigo
+  - reporte.codigo_finca → finca.codigo
+  - componente.codigo_empresa → empresa.codigo
+  - componente.codigo_finca → finca.codigo
+  - mantenimiento.codigo_empresa → empresa.codigo
+  - mantenimiento.codigo_finca → finca.codigo
+
+  FK EXISTENTES (NO SE TOCAN):
+  - usuario.codigo_finca → finca.codigo ✓
+  - usuario.codigo_rol → rol.codigo ✓
+  - empresa.codigo_superusuario → superusuario.codigo ✓
+  - cuarto_frio.codigo_finca → finca.codigo ✓
+  - sensor.codigo_cuarto → cuarto_frio.codigo ✓
+  - reporte.codigo_sensor → sensor.codigo ✓
+  - reporte.codigo_cuarto → cuarto_frio.codigo ✓
+  - componente.codigo_cuarto → cuarto_frio.codigo ✓
+  - mantenimiento.codigo_cuarto → cuarto_frio.codigo ✓
+  - mantenimiento.codigo_componente → componente.codigo ✓
+
+
+VALIDACIÓN PASO A PASO
+════════════════════════════════════════════════════════════════════════════════
+
+  Después de FASE 1:
+  ✓ SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME='usuario' AND COLUMN_NAME='codigo_empresa';
+    → Debe retornar: 1
+
+  Después de FASE 2:
+  ✓ SELECT COUNT(*) FROM usuario WHERE codigo_empresa IS NULL;
+    → Debe retornar: 0
+  ✓ SELECT COUNT(*) FROM sensor WHERE codigo_empresa IS NULL;
+    → Debe retornar: 0
+
+  Después de FASE 3:
+  ✓ SHOW CREATE TABLE usuario;
+    → codigo_empresa debe ser NOT NULL
+  ✓ SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+    WHERE CONSTRAINT_NAME='fk_usuario_empresa';
+    → Debe retornar: 1
+
+
+ERRORES COMUNES Y SOLUCIONES
+════════════════════════════════════════════════════════════════════════════════
+
+❌ ERROR: "Column 'codigo_empresa' cannot be null"
+   CAUSA: Ejecutaste FASE 3 antes de FASE 2
+   SOLUCIÓN: 
+     1. DROP constraint: ALTER TABLE usuario DROP FOREIGN KEY fk_usuario_empresa;
+     2. Convertir a NULL: ALTER TABLE usuario MODIFY codigo_empresa VARCHAR(50) NULL;
+     3. Ejecutar FASE 2 (populate)
+     4. Ejecutar FASE 3 nuevamente
+
+❌ ERROR: "Cannot add foreign key constraint"
+   CAUSA: Hay valores NULL o inválidos
+   SOLUCIÓN:
+     1. SELECT * FROM usuario WHERE codigo_empresa IS NULL;
+     2. SELECT * FROM usuario WHERE codigo_empresa NOT IN (SELECT codigo FROM empresa);
+     3. Corregir datos manualmente
+     4. Intentar FASE 3 nuevamente
+
+❌ ERROR: "Duplicate column name"
+   CAUSA: Ya ejecutaste FASE 1 antes
+   SOLUCIÓN: Ignorar y continuar con FASE 2
+
+❌ VERIFICACIÓN retorna > 0 (hay NULL)
+   CAUSA: Datos huérfanos o sin relación FK
+   SOLUCIÓN:
+     1. SELECT * FROM usuario WHERE codigo_finca NOT IN (SELECT codigo FROM finca);
+     2. Corregir datos huérfanos
+     3. Ejecutar FASE 2 nuevamente
+
+
+VENTAJAS DE ESTE ENFOQUE
+════════════════════════════════════════════════════════════════════════════════
+
+✅ NO rompe datos existentes
+✅ Usa relaciones FK para derivar valores
+✅ Permite verificación entre fases
+✅ Fácil de revertir si hay problema
+✅ Respeta integridad referencial
+✅ Migración segura en producción
+
+
+RESUMEN RÁPIDO
+════════════════════════════════════════════════════════════════════════════════
+
+  1. add_empresa_finca_isolation.sql    → Agrega columnas NULL
+  2. populate_empresa_finca_data.sql     → Llena datos
+  3. VERIFICAR que no hay NULL            → Crítico
+  4. add_empresa_finca_constraints.sql   → NOT NULL + FKs
+
+  Total: 3 archivos, ~20 segundos, 0 errores si se sigue orden
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                    Ver: EJECUTAR_MIGRACIONES.sql para detalles
+═══════════════════════════════════════════════════════════════════════════════

@@ -21,6 +21,10 @@ function respond($data, int $status = 200) {
 try {
     $userEmpresa = getUserEmpresa();
     $userFinca = getUserFinca();
+
+    if (!isSuperusuario() && !$userEmpresa) {
+        respond(['ok' => false, 'error' => 'Usuario sin empresa asignada'], 403);
+    }
     
     // Obtener todos los cuartos fríos del usuario
     $sql = "SELECT cf.* FROM cuarto_frio cf
@@ -28,14 +32,16 @@ try {
             WHERE 1=1";
     $params = [];
     
-    if ($userEmpresa) {
-        $sql .= " AND f.codigo_empresa = ?";
-        $params[] = $userEmpresa;
-    }
-    
-    if ($userFinca) {
-        $sql .= " AND cf.codigo_finca = ?";
-        $params[] = $userFinca;
+    if (!isSuperusuario()) {
+        if ($userFinca) {
+            // Usuario de finca: solo su finca
+            $sql .= " AND cf.codigo_finca = ?";
+            $params[] = $userFinca;
+        } elseif ($userEmpresa) {
+            // Usuario de empresa: todas sus fincas
+            $sql .= " AND f.codigo_empresa = ?";
+            $params[] = $userEmpresa;
+        }
     }
     
     $sql .= " ORDER BY cf.nombre";

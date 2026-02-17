@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/session_security.php';
 require_once __DIR__ . '/../models/componente.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -10,6 +11,12 @@ requireAuth(); // cualquier usuario autenticado
 
 $pdo        = Database::connect();
 $componente = new Componente($pdo);
+
+$empresaUsuario = getUserEmpresa();
+$fincaUsuario = getUserFinca();
+if (!isSuperusuario() && !$empresaUsuario) {
+    respond(['ok' => false, 'error' => 'Usuario sin empresa asignada'], 403);
+}
 
 function respond($data, int $status = 200) {
     http_response_code($status);
@@ -42,16 +49,17 @@ try {
                              WHERE comp.id = ?";
                 $stCheck = $pdo->prepare($sqlCheck);
                 $stCheck->execute([$id]);
-                $compFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
-                
-                $fincaUsuario = getUserFinca();
-                $empresaUsuario = getUserEmpresa();
-                
-                if ($fincaUsuario && $compFinca['codigo_finca'] !== $fincaUsuario) {
-                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
-                }
-                if (!$fincaUsuario && $empresaUsuario && $compFinca['codigo_empresa'] !== $empresaUsuario) {
-                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                $compData = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+                if ($compData) {
+                    // Usuario de finca: solo su finca
+                    if ($fincaUsuario && $compData['codigo_finca'] !== $fincaUsuario) {
+                        respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                    }
+                    // Usuario de empresa: solo su empresa
+                    if (!$fincaUsuario && $compData['codigo_empresa'] !== $empresaUsuario) {
+                        respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                    }
                 }
             }
             
@@ -70,16 +78,17 @@ try {
                              WHERE comp.codigo = ?";
                 $stCheck = $pdo->prepare($sqlCheck);
                 $stCheck->execute([$codigo]);
-                $compFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
-                
-                $fincaUsuario = getUserFinca();
-                $empresaUsuario = getUserEmpresa();
-                
-                if ($fincaUsuario && $compFinca['codigo_finca'] !== $fincaUsuario) {
-                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
-                }
-                if (!$fincaUsuario && $empresaUsuario && $compFinca['codigo_empresa'] !== $empresaUsuario) {
-                    respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                $compData = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+                if ($compData) {
+                    // Usuario de finca: solo su finca
+                    if ($fincaUsuario && $compData['codigo_finca'] !== $fincaUsuario) {
+                        respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                    }
+                    // Usuario de empresa: solo su empresa
+                    if (!$fincaUsuario && $compData['codigo_empresa'] !== $empresaUsuario) {
+                        respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+                    }
                 }
             }
             
@@ -88,23 +97,20 @@ try {
 
         // Listar con filtro de finca/empresa
         if (!isSuperusuario()) {
-            $fincaUsuario = getUserFinca();
-            $empresaUsuario = getUserEmpresa();
-            
             $sql = "SELECT comp.* FROM componente comp
                     INNER JOIN cuarto_frio c ON comp.codigo_cuarto = c.codigo
                     INNER JOIN finca f ON c.codigo_finca = f.codigo
                     WHERE 1=1";
             $params = [];
-            
+
             if ($fincaUsuario) {
+                // Usuario de finca: solo su finca
                 $sql .= " AND f.codigo = ?";
                 $params[] = $fincaUsuario;
             } elseif ($empresaUsuario) {
+                // Usuario de empresa: todas sus fincas
                 $sql .= " AND f.codigo_empresa = ?";
                 $params[] = $empresaUsuario;
-            } else {
-                respond(['ok'=>false,'error'=>'Sin permisos'],403);
             }
             
             if ($codigoCuarto) {
@@ -143,9 +149,6 @@ try {
                 respond(['ok'=>false,'error'=>'Cuarto no encontrado'],404);
             }
             
-            $fincaUsuario = getUserFinca();
-            $empresaUsuario = getUserEmpresa();
-            
             if ($fincaUsuario && $cuartoFinca['codigo_finca'] !== $fincaUsuario) {
                 respond(['ok'=>false,'error'=>'No puede crear componentes en otra finca'],403);
             }
@@ -177,6 +180,27 @@ try {
         }
 
         $where = $id ? ['id'=>$id] : ['codigo'=>$codigo];
+        if (!isSuperusuario()) {
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa
+                         FROM componente comp
+                         INNER JOIN cuarto_frio c ON comp.codigo_cuarto = c.codigo
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE comp." . ($id ? "id" : "codigo") . " = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$id ?? $codigo]);
+            $compFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$compFinca) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if ($fincaUsuario && $compFinca['codigo_finca'] !== $fincaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $compFinca['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+        }
+
         $r = $componente->actualizar($where, $put);
         respond($r, $r['ok'] ? 200 : 400);
     }
@@ -192,6 +216,27 @@ try {
             respond(['ok'=>false,'error'=>'Se requiere id o codigo'],422);
         }
         $where = $id ? ['id'=>$id] : ['codigo'=>$codigo];
+        if (!isSuperusuario()) {
+            $sqlCheck = "SELECT c.codigo_finca, f.codigo_empresa
+                         FROM componente comp
+                         INNER JOIN cuarto_frio c ON comp.codigo_cuarto = c.codigo
+                         INNER JOIN finca f ON c.codigo_finca = f.codigo
+                         WHERE comp." . ($id ? "id" : "codigo") . " = ?";
+            $stCheck = $pdo->prepare($sqlCheck);
+            $stCheck->execute([$id ?? $codigo]);
+            $compFinca = $stCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$compFinca) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if ($fincaUsuario && $compFinca['codigo_finca'] !== $fincaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+            if (!$fincaUsuario && $empresaUsuario && $compFinca['codigo_empresa'] !== $empresaUsuario) {
+                respond(['ok'=>false,'error'=>'Acceso denegado'],403);
+            }
+        }
+
         $r = $componente->eliminar($where);
         respond($r, $r['ok'] ? 200 : 400);
     }

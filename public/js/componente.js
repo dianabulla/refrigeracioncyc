@@ -2,14 +2,38 @@ const API_COMPONENTES = "../api/componente.php";
 const API_CUARTOS = "../api/cuarto_frio.php";
 
 document.addEventListener("DOMContentLoaded", () => {
-    cargarComponentes();
+    // Cargar con filtro activo por defecto
+    cargarComponentes("activo");
     cargarCuartos();
+
+    // Event listeners para filtros
+    const radioActivos = document.getElementById("radioActivosComponente");
+    const radioInactivos = document.getElementById("radioInactivosComponente");
+    const radioTodos = document.getElementById("radioTodosComponente");
+
+    if (radioActivos) {
+        radioActivos.addEventListener("change", () => {
+            if (radioActivos.checked) cargarComponentes("activo");
+        });
+    }
+
+    if (radioInactivos) {
+        radioInactivos.addEventListener("change", () => {
+            if (radioInactivos.checked) cargarComponentes("inactivo");
+        });
+    }
+
+    if (radioTodos) {
+        radioTodos.addEventListener("change", () => {
+            if (radioTodos.checked) cargarComponentes("todas");
+        });
+    }
 });
 
 // =========================================
-// CARGAR COMPONENTES
+// CARGAR COMPONENTES CON FILTRO
 // =========================================
-async function cargarComponentes() {
+async function cargarComponentes(filtroEstado = "activo") {
     try {
         const res = await fetch(API_COMPONENTES);
         const componentes = await res.json();
@@ -24,25 +48,84 @@ async function cargarComponentes() {
             return;
         }
         
+        // Aplicar filtro
+        let dataFiltrada = componentes;
+        if (filtroEstado === "activo") {
+            dataFiltrada = componentes.filter(item => Number(item.activo) === 1);
+        } else if (filtroEstado === "inactivo") {
+            dataFiltrada = componentes.filter(item => Number(item.activo) === 0);
+        }
+        // Si es "todas" no se filtra
+        
+        if (dataFiltrada.length === 0) {
+            msgVacio.style.display = "block";
+            return;
+        }
+        
         msgVacio.style.display = "none";
         
-        componentes.forEach(comp => {
+        dataFiltrada.forEach(comp => {
             const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td><strong>${comp.codigo}</strong></td>
-                <td>${comp.nombre}</td>
-                <td class="d-none d-md-table-cell">${comp.tipo ?? "-"}</td>
-                <td class="d-none d-md-table-cell">${comp.codigo_cuarto ?? "-"}</td>
-                <td class="d-none d-lg-table-cell">${comp.descripcion ? comp.descripcion.substring(0, 50) + "..." : "-"}</td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-warning" onclick="editar(${comp.id})" title="Editar">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="eliminar(${comp.id})" title="Eliminar">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
+            
+            // Columna Código
+            const tdCodigo = document.createElement("td");
+            const strongCodigo = document.createElement("strong");
+            strongCodigo.textContent = comp.codigo;
+            tdCodigo.appendChild(strongCodigo);
+            tr.appendChild(tdCodigo);
+            
+            // Columna Nombre
+            const tdNombre = document.createElement("td");
+            tdNombre.textContent = comp.nombre;
+            tr.appendChild(tdNombre);
+            
+            // Columna Tipo
+            const tdTipo = document.createElement("td");
+            tdTipo.className = "d-none d-md-table-cell";
+            tdTipo.textContent = comp.tipo ?? "-";
+            tr.appendChild(tdTipo);
+            
+            // Columna Cuarto
+            const tdCuarto = document.createElement("td");
+            tdCuarto.className = "d-none d-md-table-cell";
+            tdCuarto.textContent = comp.codigo_cuarto ?? "-";
+            tr.appendChild(tdCuarto);
+            
+            // Columna Descripción
+            const tdDesc = document.createElement("td");
+            tdDesc.className = "d-none d-lg-table-cell";
+            tdDesc.textContent = comp.descripcion ? comp.descripcion.substring(0, 50) + "..." : "-";
+            tr.appendChild(tdDesc);
+            
+            // Columna Opciones
+            const tdOpciones = document.createElement("td");
+            tdOpciones.className = "text-center";
+            
+            // Botón Ver
+            const btnVer = document.createElement("button");
+            btnVer.className = "btn btn-sm btn-info me-1";
+            btnVer.title = "Ver";
+            btnVer.innerHTML = '<i class="bi bi-eye"></i>';
+            btnVer.onclick = function() { verDetallesComponente(comp.id); };
+            tdOpciones.appendChild(btnVer);
+            
+            // Botón Editar
+            const btnEditar = document.createElement("button");
+            btnEditar.className = "btn btn-sm btn-warning me-1";
+            btnEditar.title = "Editar";
+            btnEditar.innerHTML = '<i class="bi bi-pencil"></i>';
+            btnEditar.onclick = function() { editar(comp.id); };
+            tdOpciones.appendChild(btnEditar);
+            
+            // Botón Eliminar
+            const btnEliminar = document.createElement("button");
+            btnEliminar.className = "btn btn-sm btn-danger";
+            btnEliminar.title = "Eliminar";
+            btnEliminar.innerHTML = '<i class="bi bi-trash"></i>';
+            btnEliminar.onclick = function() { eliminar(comp.id); };
+            tdOpciones.appendChild(btnEliminar);
+            
+            tr.appendChild(tdOpciones);
             tbody.appendChild(tr);
         });
         
@@ -127,11 +210,40 @@ async function crear() {
         }
         
         bootstrap.Modal.getInstance(document.getElementById("modalComponente")).hide();
-        cargarComponentes();
+        cargarComponentes("activo");
         alert("✅ Componente creado exitosamente");
     } catch (err) {
         console.error("Error:", err);
         alert("Error al crear componente");
+    }
+}
+
+// =========================================
+// VER DETALLES DEL COMPONENTE
+// =========================================
+async function verDetallesComponente(id) {
+    try {
+        const res = await fetch(`${API_COMPONENTES}?id=${id}`);
+        const comp = await res.json();
+        
+        if (!comp || comp.error) {
+            return alert("❌ Componente no encontrado");
+        }
+        
+        // Llenar modal de visualización
+        document.getElementById("verCodigoComponente").value = comp.codigo || "";
+        document.getElementById("verNombreComponente").value = comp.nombre || "";
+        document.getElementById("verTipoComponente").value = comp.tipo || "";
+        document.getElementById("verCuartoComponente").value = comp.codigo_cuarto || "";
+        document.getElementById("verDescripcionComponente").value = comp.descripcion || "";
+        document.getElementById("verEstadoComponente").value = Number(comp.activo) === 1 ? "Activo" : "Inactivo";
+        
+        const modalEl = document.getElementById("modalVerComponente");
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    } catch (err) {
+        console.error("Error:", err);
+        alert("Error al cargar componente");
     }
 }
 
@@ -192,7 +304,7 @@ async function actualizar(id) {
         }
         
         bootstrap.Modal.getInstance(document.getElementById("modalComponente")).hide();
-        cargarComponentes();
+        cargarComponentes("activo");
         alert("✅ Componente actualizado exitosamente");
     } catch (err) {
         console.error("Error:", err);
@@ -219,7 +331,7 @@ async function eliminar(id) {
             return alert("❌ Error: " + (json.error || "No se pudo eliminar"));
         }
         
-        cargarComponentes();
+        cargarComponentes("activo");
         alert("✅ Componente eliminado exitosamente");
     } catch (err) {
         console.error("Error:", err);
